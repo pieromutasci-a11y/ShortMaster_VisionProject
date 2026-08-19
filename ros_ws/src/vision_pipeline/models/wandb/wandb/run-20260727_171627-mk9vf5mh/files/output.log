@@ -1,0 +1,50 @@
+New https://pypi.org/project/ultralytics/8.4.107 available 😃 Update with 'pip install -U ultralytics'
+Ultralytics 8.4.80 🚀 Python-3.10.12 torch-2.12.1+cu130 CPU (Intel Core i5-1035G1 1.00GHz)
+[34m[1mengine/trainer: [0magnostic_nms=False, amp=True, angle=1.0, augment=False, auto_augment=randaugment, batch=4, bgr=0.0, box=8.741931367109911, cache=disk, cfg=None, classes=None, close_mosaic=10, cls=0.3451811312129304, cls_pw=0.0, compile=False, conf=None, copy_paste=0.2840453498999521, copy_paste_mode=flip, cos_lr=False, cutmix=0.0, data=/home/user/ros_workspace/Training_Dataset.yolov8/data.yaml, degrees=0.0, deterministic=True, device=cpu, dfl=1.2007296728058665, dis=6.0, distill_model=None, dnn=False, dropout=0.0, dynamic=False, embed=None, end2end=None, epochs=100, erasing=0.4, exist_ok=True, fliplr=0.5, flipud=0.0, format=torchscript, fraction=1.0, freeze=None, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4, imgsz=640, iou=0.7, keras=False, kobj=1.0, line_width=None, lr0=0.008075276643137539, lrf=0.04658453213152011, mask_ratio=4, max_det=300, mixup=0.0, mode=train, model=yolov8n.pt, momentum=0.906235253009945, mosaic=0.8908389114170455, multi_scale=0.0, name=mk9vf5mh, nbs=64, nms=False, opset=None, optimize=False, optimizer=AdamW, overlap_mask=True, patience=25, perspective=0.0, plots=True, pose=12.0, pretrained=True, profile=False, project=/home/user/ros_workspace/wandb/runs/sqkfh2ka/training, quantize=None, rect=False, resume=False, retina_masks=False, rle=1.0, save=True, save_conf=False, save_crop=False, save_dir=/home/user/ros_workspace/wandb/runs/sqkfh2ka/training/mk9vf5mh, save_frames=False, save_json=False, save_period=-1, save_txt=False, scale=0.4025664677902015, seed=0, shear=0.0, show=False, show_boxes=True, show_conf=True, show_labels=True, simplify=True, single_cls=False, source=None, split=val, stream_buffer=False, task=detect, time=None, tracker=tracktrack.yaml, translate=0.007788703166745337, val=True, verbose=True, vid_stride=1, visualize=False, warmup_bias_lr=0.1, warmup_epochs=3.0, warmup_momentum=0.8, weight_decay=0.0002757395149116476, workers=0, workspace=None
+[KDownloading https://ultralytics.com/assets/Arial.ttf to '/tmp/Ultralytics/Arial.ttf': 100% ━━━━━━━━━━━━ 755.1KB 318.4KB/s 2.4s 2.4s<0.1ss
+Overriding model.yaml nc=80 with nc=6
+
+                   from  n    params  module                                       arguments
+  0                  -1  1       464  ultralytics.nn.modules.conv.Conv             [3, 16, 3, 2]
+  1                  -1  1      4672  ultralytics.nn.modules.conv.Conv             [16, 32, 3, 2]
+  2                  -1  1      7360  ultralytics.nn.modules.block.C2f             [32, 32, 1, True]
+  3                  -1  1     18560  ultralytics.nn.modules.conv.Conv             [32, 64, 3, 2]
+  4                  -1  2     49664  ultralytics.nn.modules.block.C2f             [64, 64, 2, True]
+  5                  -1  1     73984  ultralytics.nn.modules.conv.Conv             [64, 128, 3, 2]
+  6                  -1  2    197632  ultralytics.nn.modules.block.C2f             [128, 128, 2, True]
+  7                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]
+  8                  -1  1    460288  ultralytics.nn.modules.block.C2f             [256, 256, 1, True]
+  9                  -1  1    164608  ultralytics.nn.modules.block.SPPF            [256, 256, 5]
+ 10                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 11             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]
+ 12                  -1  1    148224  ultralytics.nn.modules.block.C2f             [384, 128, 1]
+ 13                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 14             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]
+ 15                  -1  1     37248  ultralytics.nn.modules.block.C2f             [192, 64, 1]
+ 16                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]
+ 17            [-1, 12]  1         0  ultralytics.nn.modules.conv.Concat           [1]
+ 18                  -1  1    123648  ultralytics.nn.modules.block.C2f             [192, 128, 1]
+ 19                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]
+ 20             [-1, 9]  1         0  ultralytics.nn.modules.conv.Concat           [1]
+ 21                  -1  1    493056  ultralytics.nn.modules.block.C2f             [384, 256, 1]
+ 22        [15, 18, 21]  1    752482  ultralytics.nn.modules.head.Detect           [6, 16, None, [64, 128, 256]]
+Model summary: 130 layers, 3,012,018 parameters, 3,012,002 gradients, 8.2 GFLOPs
+
+Transferred 319/355 items from pretrained weights
+Freezing layer 'model.22.dfl.conv.weight'
+[34m[1mtrain: [0mFast image access ✅ (ping: 0.0±0.0 ms, read: 108.3±18.3 MB/s, size: 70.2 KB)
+[K[34m[1mtrain: [0mScanning /home/user/ros_workspace/Training_Dataset.yolov8/train/labels.cache... 687 images, 0 backgrounds, 0 corrupt: 100% ━━━━━━━━━━━━ 687/687 137.2Mit/s 0.0s
+[K[34m[1mtrain: [0mCaching images (0.8GB Disk): 100% ━━━━━━━━━━━━ 687/687 51.5Kit/s 0.0s
+[34m[1mval: [0mFast image access ✅ (ping: 0.0±0.0 ms, read: 126.8±23.7 MB/s, size: 64.3 KB)
+[K[34m[1mval: [0mScanning /home/user/ros_workspace/Training_Dataset.yolov8/valid/labels.cache... 196 images, 0 backgrounds, 0 corrupt: 100% ━━━━━━━━━━━━ 196/196 28.3Mit/s 0.0s
+[K[34m[1mval: [0mCaching images (0.2GB Disk): 100% ━━━━━━━━━━━━ 196/196 49.2Kit/s 0.0s
+[34m[1moptimizer:[0m AdamW(lr=0.008075276643137539, momentum=0.906235253009945) with parameter groups 57 weight(decay=0.0), 64 weight(decay=0.0002757395149116476), 63 bias(decay=0.0)
+Plotting labels to /home/user/ros_workspace/wandb/runs/sqkfh2ka/training/mk9vf5mh/labels.jpg...
+Image sizes 640 train, 640 val
+Using 0 dataloader workers
+Logging results to [1m/home/user/ros_workspace/wandb/runs/sqkfh2ka/training/mk9vf5mh[0m
+Starting training for 100 epochs...
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+[K      1/100         0G      1.023     0.8694      0.763         43        640: 76% ━━━━━━━━━─── 131/172 2.3s/it 3:48<1:34
+[34m[1mwandb[0m: [33mWARNING[0m Fatal error while uploading data. Some run data will not be synced, but it will still be written to disk. Use `wandb sync` at the end of the run to try uploading.

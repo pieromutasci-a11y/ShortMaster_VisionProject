@@ -1,0 +1,14 @@
+# Partiamo dall'immagine base fornita da PAL Robotics
+FROM palrobotics/public-simulation-humble-public
+
+# Aggiorniamo i pacchetti di sistema e installiamo pip e cv_bridge
+RUN sudo apt-get update && sudo apt-get install -y \
+    python3-pip \
+    ros-humble-cv-bridge \
+    python3-opencv \
+    ros-humble-teleop-twist-keyboard \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+# Installiamo la libreria di YOLOv8
+RUN pip3 install ultralytics
+RUN pip3 install "numpy<2" --force-reinstall

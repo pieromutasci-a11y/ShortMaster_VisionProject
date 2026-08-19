@@ -1,0 +1,93 @@
+# ─────────────────────────────────────────────────────────
+# Configurazione dello sweep W&B
+# ─────────────────────────────────────────────────────────
+# Metodo di ricerca: 'bayes' sceglie la prossima combinazione in base ai
+# risultati precedenti -> più efficiente di grid/random con budget limitato
+# (importante dato che siamo su CPU e ogni run costa tempo).
+method: bayes
+
+metric:
+  # Questa è la funzione obiettivo: mAP50-95 media sulle classi rilevanti
+  # per il grasping (coke can, pringles can, biscuits pack, aruco marker).
+  # Viene loggata esplicitamente nello script (non è automatica in Ultralytics).
+  name: map5095_grasp
+  goal: maximize
+
+parameters:
+
+  # ── Geometria e qualità del box (priorità alta per l'obiettivo) ──
+  box_gain:
+    distribution: uniform
+    min: 6.0
+    max: 10.0
+
+  cls_gain:
+    distribution: uniform
+    min: 0.3
+    max: 0.7
+
+  dfl_gain:
+    distribution: uniform
+    min: 1.0
+    max: 2.0
+
+  # ── Risoluzione immagine ──
+  # Categorica: testiamo valori discreti invece di un range continuo,
+  # perché il costo computazionale su CPU scala molto tra un valore e l'altro.
+  imgsz:
+    value: 640
+
+  # ── Ottimizzazione ──
+  lr0:
+    distribution: log_uniform_values
+    min: 0.001
+    max: 0.01
+
+  lrf:
+    distribution: uniform
+    min: 0.01
+    max: 0.2
+
+  momentum:
+    distribution: uniform
+    min: 0.85
+    max: 0.98
+
+  weight_decay:
+    distribution: log_uniform_values
+    min: 0.0001
+    max: 0.001
+
+  optimizer:
+    values: ["SGD", "AdamW"]
+
+  # ── Augmentation geometrica (range ristretto: camera fissa, niente
+  # rotazioni/prospettive forti come deciso in precedenza) ──
+  scale:
+    distribution: uniform
+    min: 0.0
+    max: 0.5
+
+  translate:
+    distribution: uniform
+    min: 0.0
+    max: 0.2
+
+  copy_paste:
+    distribution: uniform
+    min: 0.0
+    max: 0.3
+
+  mosaic:
+    distribution: uniform
+    min: 0.5
+    max: 1.0
+
+# Budget massimo di run (interrompe lo sweep anche se bayes vorrebbe continuare).
+# Regolabile in base al tempo che vuoi dedicare.
+run_cap: 20
+
+command:
+  - python3
+  - ${program}
+  - ${args}

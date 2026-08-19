@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 6
+names: ['aruco marker', 'biscuits pack', 'bookshelf', 'coke can', 'dinner table', 'pringles can']
+
+roboflow:
+  workspace: pieros-workspace-img2e
+  project: creating-dataset-for-master
+  version: dataset
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/pieros-workspace-img2e/creating-dataset-for-master/dataset/dataset

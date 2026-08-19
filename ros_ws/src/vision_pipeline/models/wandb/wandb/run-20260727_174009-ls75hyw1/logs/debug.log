@@ -1,0 +1,25 @@
+2026-07-27 17:40:09,059 INFO    Thread-3 (_run_job):45 [wandb_setup.py:_flush():81] Current SDK version is 0.28.1
+2026-07-27 17:40:09,059 INFO    Thread-3 (_run_job):45 [wandb_setup.py:_flush():81] Configure stats pid to 45
+2026-07-27 17:40:09,059 INFO    Thread-3 (_run_job):45 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-07-27 17:40:09,059 INFO    Thread-3 (_run_job):45 [wandb_init.py:setup_run_log_directory():729] Logging user logs to /home/user/ros_workspace/wandb/wandb/run-20260727_174009-ls75hyw1/logs/debug.log
+2026-07-27 17:40:09,060 INFO    Thread-3 (_run_job):45 [wandb_init.py:setup_run_log_directory():730] Logging internal logs to /home/user/ros_workspace/wandb/wandb/run-20260727_174009-ls75hyw1/logs/debug-internal.log
+2026-07-27 17:40:09,060 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():772] calling init triggers
+2026-07-27 17:40:09,060 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():777] wandb.init called with sweep_config: {'box_gain': 9.064858513667708, 'cls_gain': 0.6608206068442949, 'copy_paste': 0.26021324386200423, 'dfl_gain': 1.379472609633524, 'imgsz': 640, 'lr0': 0.0017091221594054094, 'lrf': 0.12014731072310784, 'momentum': 0.861966949399064, 'mosaic': 0.9090608726744684, 'optimizer': 'AdamW', 'scale': 0.09066561811141816, 'translate': 0.08771259811598907, 'weight_decay': 0.0005138086165413094}
+config: {'_wandb': {}}
+2026-07-27 17:40:09,060 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():820] starting backend
+2026-07-27 17:40:09,060 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():835] sending inform_init request
+2026-07-27 17:40:09,166 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():840] backend started and connected
+2026-07-27 17:40:09,166 INFO    Thread-3 (_run_job):45 [wandb_run.py:_config_callback():1346] config_cb None None {'box_gain': 9.064858513667708, 'cls_gain': 0.6608206068442949, 'copy_paste': 0.26021324386200423, 'dfl_gain': 1.379472609633524, 'imgsz': 640, 'lr0': 0.0017091221594054094, 'lrf': 0.12014731072310784, 'momentum': 0.861966949399064, 'mosaic': 0.9090608726744684, 'optimizer': 'AdamW', 'scale': 0.09066561811141816, 'translate': 0.08771259811598907, 'weight_decay': 0.0005138086165413094}
+2026-07-27 17:40:09,167 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():910] updated telemetry
+2026-07-27 17:40:09,169 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():933] communicating run to backend with 90.0 second timeout
+2026-07-27 17:40:10,589 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():978] starting run threads in backend
+2026-07-27 17:40:10,713 INFO    Thread-3 (_run_job):45 [wandb_run.py:_console_start():2621] atexit reg
+2026-07-27 17:40:10,713 INFO    Thread-3 (_run_job):45 [wandb_run.py:_redirect():2471] redirect: wrap_raw
+2026-07-27 17:40:10,713 INFO    Thread-3 (_run_job):45 [wandb_run.py:_redirect():2540] Wrapping output streams.
+2026-07-27 17:40:10,713 INFO    Thread-3 (_run_job):45 [wandb_run.py:_redirect():2563] Redirects installed.
+2026-07-27 17:40:10,715 INFO    Thread-3 (_run_job):45 [wandb_init.py:init():1016] run started, returning control to user process
+2026-07-28 00:04:13,860 INFO    Thread-3 (_run_job):45 [wandb_run.py:_finish():2383] finishing run pieromutasci-politecnico-di-bari/master_detection_sweeps/ls75hyw1
+2026-07-28 00:04:13,865 INFO    Thread-3 (_run_job):45 [wandb_run.py:_atexit_cleanup():2588] got exitcode: 0
+2026-07-28 00:04:13,866 INFO    Thread-3 (_run_job):45 [wandb_run.py:_restore():2570] restore
+2026-07-28 00:04:13,867 INFO    Thread-3 (_run_job):45 [wandb_run.py:_restore():2576] restore done
+2026-07-28 00:04:16,226 INFO    Thread-3 (_run_job):45 [wandb_run.py:_footer_sync_info():3993] logging synced files
