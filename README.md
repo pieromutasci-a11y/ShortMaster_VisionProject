@@ -1,4 +1,4 @@
-# ShortMaster Vision Project (per ora solo con il pacchetto vision_pipeline)
+# ShortMaster Vision Project
 
 Progetto di visione per TIAGo Pro: il robot impara a riconoscere alcuni
 oggetti sul tavolo (lattina di coca, confezione di pringles, biscotti,
