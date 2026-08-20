@@ -14,7 +14,6 @@ braccio sinistro.
 | `launch/move_group_pickik.launch.py` | Copia locale (modificabile) del `move_group.launch.py` di `tiago_pro_moveit_config`, per lanciare `move_group` con la configurazione PickIK. |
 | `config/kinematics_pickik.yaml` | Solver IK per gruppo: `pick_ik/PickIkPlugin` per `arm_left`, KDL per gli altri gruppi. |
 | `config/tiago_pro_for_moveit.urdf` | URDF del TIAGo Pro usato per la pianificazione. |
-| `rviz/complete_visualization.rviz` | Configurazione RViz per visualizzare pianificazione e target. |
 
 ```bash
 ros2 launch pose_optimizer move_group_pickik.launch.py
