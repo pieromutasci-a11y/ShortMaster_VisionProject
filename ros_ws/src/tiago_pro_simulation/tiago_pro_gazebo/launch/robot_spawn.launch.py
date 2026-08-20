@@ -52,7 +52,7 @@ def declare_actions(launch_description: LaunchDescription, launch_args: LaunchAr
     robot_entity = Node(package="gazebo_ros", executable="spawn_entity.py",
                         arguments=["-topic", "robot_description",
                                    "-entity", "tiago-pro",
-                                      "-x", "5.0", "-y", "4.0", "-z", "0.08", "-Y", "1.57",
+                                      "-x", "5.0", "-y", "3.7", "-z", "0.08", "-Y", "1.57",
                                    ],
                         output="screen",
                         condition=LaunchConfigurationEquals('gazebo_version', 'classic'),)
