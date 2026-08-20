@@ -46,11 +46,8 @@ DETECTION_CONFIDENCE_THRESHOLD = 0.6
 MIN_RANGE = 0.3
 MAX_RANGE = 3.0
 
-# Path di default dei pesi del modello: cartella condivisa host<->container
-# (vedi run.sh). Configurabile senza modificare il codice via parametro ROS
-# 'model_weights_path':
-#   ros2 run detection_and_ranging rt_object_detection --ros-args -p model_weights_path:=/path/to/best.pt
-DEFAULT_MODEL_WEIGHTS_PATH = "/home/user/exchange/models/weights/best2.pt"
+# Best model dello sweep W&B (run xl1874f6, vedi vision_pipeline/vision_pipeline/yolo/evaluate.py)
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
 
 
 class RtObjectDetectionNode(Node):
@@ -63,9 +60,6 @@ class RtObjectDetectionNode(Node):
 
     def __init__(self):
         super().__init__('rt_object_detection_node')
-
-        self.declare_parameter('model_weights_path', DEFAULT_MODEL_WEIGHTS_PATH)
-        model_weights_path = self.get_parameter('model_weights_path').get_parameter_value().string_value
 
         # QoS profile matching typical camera driver settings (best effort,
         # shallow history — we don't need every historical frame).
@@ -86,8 +80,7 @@ class RtObjectDetectionNode(Node):
         self.cv_bridge = CvBridge()
 
         # Load the YOLOv8 model once at start-up
-        self.get_logger().info(f'Loading YOLO weights from: {model_weights_path}')
-        self.detection_model = YOLO(model_weights_path)
+        self.detection_model = YOLO(MODEL_WEIGHTS_PATH)
 
         # Camera intrinsics, populated once a CameraInfo message arrives.
         # Left as None initially so we can skip processing until they're available.

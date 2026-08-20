@@ -6,13 +6,13 @@ sincronizzata per stimarne la posizione 3D nel frame ottico della camera.
 
 | Nodo | Eseguibile | Descrizione |
 |---|---|---|
-| `rt_object_detection_node.py` | `rt_object_detection` | Sottoscrive RGB + depth (sincronizzati), pubblica il frame annotato (`yolo/annotated_frame`) e la posizione 3D dell'oggetto target (`yolo/coke_can_position`, `geometry_msgs/PointStamped`). |
+| `rt_object_detection_node.py` | `rt_object_detection` | Sottoscrive RGB + depth (sincronizzati), pubblica il frame annotato (`yolo/annotated_frame`) e la posizione 3D dell'oggetto target (`yolo/coke_can_position`, `geometry_msgs/PointStamped`). Usa il modello migliore dello sweep W&B (run `xl1874f6`, path hardcoded in cima al file). |
 
 `rviz/complete_visualization.rviz` mostra questi output (immagine annotata,
 point cloud di depth, robot model, marker di posizione) in un'unica vista:
 
 ```bash
-ros2 run detection_and_ranging rt_object_detection --ros-args -p model_weights_path:=/path/to/best.pt
+ros2 run detection_and_ranging rt_object_detection
 rviz2 -d install/detection_and_ranging/share/detection_and_ranging/rviz/complete_visualization.rviz
 ```
 
