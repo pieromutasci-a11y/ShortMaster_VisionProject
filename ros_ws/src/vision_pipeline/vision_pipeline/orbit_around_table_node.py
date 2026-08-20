@@ -29,7 +29,7 @@ from builtin_interfaces.msg import Duration
 # ---- Parametri configurabili ----
 CENTER_X = 5.0          # centro del tavolo (da poliBaMaster.world)
 CENTER_Y = 5.0
-RADIUS = 1.3            # raggio dell'orbita (metri) - corrisponde alla distanza di spawn del robot dal tavolo
+RADIUS = 1.5            # raggio dell'orbita (metri) - corrisponde alla distanza di spawn del robot dal tavolo
 
 ORBIT_ANGULAR_SPEED = 0.2   # velocita' angolare di percorrenza dell'orbita (rad/s)
 ORBIT_DIRECTION = -1         # 1 = antiorario, -1 = orario (verso sinistra del robot dato lo yaw di partenza)
