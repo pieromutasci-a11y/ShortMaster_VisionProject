@@ -40,13 +40,28 @@ Il modello finale viene validato sul test set (metriche globali e per
 classe) e usato per fare inferenza con bounding box disegnati, per
 verificare visivamente la qualita' delle predizioni.
 
+## 5. Dal riconoscimento alla presa
+
+Con un modello affidabile, il passo successivo e' usarlo a runtime sul
+robot per portare il braccio verso l'oggetto:
+
+- [`detection_and_ranging`](ros_ws/src/detection_and_ranging) — rileva
+  l'oggetto in tempo reale (YOLOv8) e, fondendo la detection con la depth
+  della camera, ne stima la posizione 3D.
+- [`pose_optimizer`](ros_ws/src/pose_optimizer) — dato un target, calcola
+  (via MoveIt + plugin di cinematica inversa PickIK) una configurazione del
+  braccio che lo raggiunga, ottimizzando la posa invece di affidarsi alla
+  sola soluzione analitica.
+
 ## Struttura del repo
 
 ```
-docker_ws/        # immagine Docker (simulazione PAL + dipendenze YOLO)
-ros_ws/            # workspace ROS2 (colcon)
+docker_ws/                 # immagine Docker (simulazione PAL + dipendenze YOLO)
+ros_ws/                     # workspace ROS2 (colcon)
 ├── src/
-│   ├── vision_pipeline/   # pacchetto del progetto: nodi + script YOLO + dataset + modelli
-│   └── pal_*, tiago_pro_*/ # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
+│   ├── vision_pipeline/       # dataset + training/eval YOLO + nodi di raccolta dati
+│   ├── detection_and_ranging/ # detection + stima posizione 3D a runtime
+│   ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + PickIK)
+│   └── pal_*, tiago_pro_*/    # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
 └── scripts/
 ```
