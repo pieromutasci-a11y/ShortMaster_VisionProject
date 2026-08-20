@@ -32,10 +32,11 @@ from cv_bridge import CvBridge
 from ultralytics import YOLO
 
 
-# Name of the class (as defined in the YOLO model's names dict) that we want to track (MODIFICATO)
-COKE_CLASS_NAME = 'coke_cane'
-BISCUITS_CLASS_NAME = 'biscuits_pack'
-PRINGLES_CLASS_NAME = 'pringles_can'
+# Name of the class (as defined in the YOLO model's names dict) that we want to track.
+# Deve corrispondere esattamente ai nomi in vision_pipeline/data/training_dataset.yolov8/data.yaml
+COKE_CLASS_NAME = 'coke can'
+BISCUITS_CLASS_NAME = 'biscuits pack'
+PRINGLES_CLASS_NAME = 'pringles can'
 INTERESTED_OBJ = [COKE_CLASS_NAME, BISCUITS_CLASS_NAME, PRINGLES_CLASS_NAME]
 
 
