@@ -5,12 +5,15 @@ Uso:
   ros2 launch detection_and_ranging full_stack.launch.py
   # se la simulazione e' gia' avviata altrove:
   ros2 launch detection_and_ranging full_stack.launch.py launch_simulation:=false
+  # senza RViz:
+  ros2 launch detection_and_ranging full_stack.launch.py rviz:=false
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -25,24 +28,45 @@ def generate_launch_description():
         default_value='True',
         description='Se true, avvia anche RViz con la vista pre-configurata.',
     )
+    rviz_config_arg = DeclareLaunchArgument(
+        'rviz_config',
+        default_value=PathJoinSubstitution([
+            FindPackageShare('detection_and_ranging'),
+            'rviz', 'complete_visualization.rviz',
+        ]),
+        description='File di configurazione RViz da usare.',
+    )
 
+    # Simulazione: unica sorgente di verita' in vision_pipeline, incluso qui
+    # senza duplicare la configurazione del mondo/robot.
     simulation_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution([
-            FindPackageShare('detection_and_ranging'), 'launch', 'simulation.launch.py',
+            FindPackageShare('vision_pipeline'), 'launch', 'simulation.launch.py',
         ])),
         condition=IfCondition(LaunchConfiguration('launch_simulation')),
     )
 
-    detection_and_rviz_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([
-            FindPackageShare('detection_and_ranging'), 'launch', 'rt_object_detection.launch.py',
-        ])),
-        launch_arguments={'rviz': LaunchConfiguration('rviz')}.items(),
+    detection_node = Node(
+        package='detection_and_ranging',
+        executable='rt_object_detection',
+        name='rt_object_detection_node',
+        output='screen',
+    )
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', LaunchConfiguration('rviz_config')],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('rviz')),
     )
 
     return LaunchDescription([
         launch_simulation_arg,
         rviz_arg,
+        rviz_config_arg,
         simulation_launch,
-        detection_and_rviz_launch,
+        detection_node,
+        rviz_node,
     ])

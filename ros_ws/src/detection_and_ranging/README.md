@@ -21,31 +21,9 @@ ros2 launch detection_and_ranging full_stack.launch.py launch_simulation:=false
 # senza RViz:
 ros2 launch detection_and_ranging full_stack.launch.py rviz:=false
 ```
-E' un semplice `IncludeLaunchDescription` dei due launch file sotto — nessuna
-duplicazione, funziona perche' due `ros2 launch` (o due `Node`) sono processi
-indipendenti che comunicano sulla stessa rete ROS.
-
-Oppure, separatamente in due terminali:
-
-**Terminale 1 — simulazione:**
-```bash
-ros2 launch detection_and_ranging simulation.launch.py
-# (include vision_pipeline/launch/simulation.launch.py, nessuna duplicazione)
-```
-
-**Terminale 2 — detection + RViz**, una volta che la simulazione e' su:
-```bash
-ros2 launch detection_and_ranging rt_object_detection.launch.py
-# oppure senza RViz:
-ros2 launch detection_and_ranging rt_object_detection.launch.py rviz:=false
-```
-
-In alternativa, nodo e RViz singolarmente:
-
-```bash
-ros2 run detection_and_ranging rt_object_detection
-rviz2 -d install/detection_and_ranging/share/detection_and_ranging/rviz/complete_visualization.rviz
-```
+Include `vision_pipeline/launch/simulation.launch.py` per la simulazione
+(nessuna duplicazione della configurazione del mondo/robot) e avvia
+direttamente il nodo di detection e RViz.
 
 Questa posizione 3D e' l'input che [`pose_optimizer`](../pose_optimizer) usa
 come target per la pianificazione IK.
