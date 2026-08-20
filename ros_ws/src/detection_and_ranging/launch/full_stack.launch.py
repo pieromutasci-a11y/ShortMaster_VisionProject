@@ -17,12 +17,12 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     launch_simulation_arg = DeclareLaunchArgument(
         'launch_simulation',
-        default_value='true',
+        default_value='True',
         description='Se true, avvia anche la simulazione Gazebo del TIAGo Pro.',
     )
     rviz_arg = DeclareLaunchArgument(
         'rviz',
-        default_value='true',
+        default_value='True',
         description='Se true, avvia anche RViz con la vista pre-configurata.',
     )
 
