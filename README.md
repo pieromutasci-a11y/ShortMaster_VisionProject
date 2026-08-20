@@ -58,10 +58,13 @@ robot per portare il braccio verso l'oggetto:
 ```
 docker_ws/                 # immagine Docker (simulazione PAL + dipendenze YOLO)
 ros_ws/                     # workspace ROS2 (colcon)
-├── src/
-│   ├── vision_pipeline/       # dataset + training/eval YOLO + nodi di raccolta dati
-│   ├── detection_and_ranging/ # detection + stima posizione 3D a runtime
-│   ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + PickIK)
-│   └── pal_*, tiago_pro_*/    # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
-└── scripts/
+└── src/
+    ├── vision_pipeline/       # dataset + training/eval YOLO + nodi di raccolta dati + launch simulazione
+    ├── detection_and_ranging/ # detection + stima posizione 3D a runtime
+    ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + PickIK)
+    └── pal_*, tiago_pro_*/    # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
 ```
+
+Il launch della simulazione Gazebo (`ros2 launch vision_pipeline simulation.launch.py`)
+vive in `vision_pipeline` — e' il punto di partenza comune prima di lanciare
+raccolta dataset, detection o pianificazione.

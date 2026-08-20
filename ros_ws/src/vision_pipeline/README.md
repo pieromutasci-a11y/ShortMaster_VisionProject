@@ -6,6 +6,18 @@ supporto, e training/valutazione/inferenza YOLOv8.
 
 ## Contenuto
 
+### Simulazione (`launch/`)
+
+`ros2 launch vision_pipeline simulation.launch.py` avvia la simulazione
+Gazebo del TIAGo Pro (mondo, SLAM, navigazione) — e' il punto di partenza
+comune prima di lanciare raccolta dataset, detection o pianificazione.
+Argomenti: `world_name` (default `poliBaMaster`), `is_public_sim`, `slam`,
+`navigation` (default `True`).
+
+```bash
+ros2 launch vision_pipeline simulation.launch.py
+```
+
 ### Nodi ROS2 (`vision_pipeline/`)
 
 | Nodo | Eseguibile | Descrizione |
