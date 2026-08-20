@@ -13,6 +13,20 @@ point cloud di depth, robot model, marker di posizione) in un'unica vista —
 ma per vederci qualcosa (robot, camera, tf) serve la simulazione (o il
 robot reale) gia' avviata, altrimenti RViz non ha nulla da disegnare.
 
+**Un solo comando** per l'intero stack (simulazione + detection + RViz):
+```bash
+ros2 launch detection_and_ranging full_stack.launch.py
+# se la simulazione e' gia' avviata altrove:
+ros2 launch detection_and_ranging full_stack.launch.py launch_simulation:=false
+# senza RViz:
+ros2 launch detection_and_ranging full_stack.launch.py rviz:=false
+```
+E' un semplice `IncludeLaunchDescription` dei due launch file sotto — nessuna
+duplicazione, funziona perche' due `ros2 launch` (o due `Node`) sono processi
+indipendenti che comunicano sulla stessa rete ROS.
+
+Oppure, separatamente in due terminali:
+
 **Terminale 1 — simulazione:**
 ```bash
 ros2 launch detection_and_ranging simulation.launch.py
@@ -26,10 +40,7 @@ ros2 launch detection_and_ranging rt_object_detection.launch.py
 ros2 launch detection_and_ranging rt_object_detection.launch.py rviz:=false
 ```
 
-I due `ros2 launch` sono processi indipendenti che comunicano sulla stessa
-rete ROS: nessun problema a tenerli su in due terminali separati.
-
-In alternativa, nodo e RViz separatamente:
+In alternativa, nodo e RViz singolarmente:
 
 ```bash
 ros2 run detection_and_ranging rt_object_detection
