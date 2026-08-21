@@ -519,6 +519,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /yolo/coke_can_position
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: CokeCan Center Axis
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /cokecan_center_axis
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

@@ -26,6 +26,7 @@ setup(
     entry_points={
         'console_scripts': [
             'rt_object_detection = detection_and_ranging.rt_object_detection_node:main',
+            'center_computation = detection_and_ranging.center_computation:main',
         ],
     },
 )

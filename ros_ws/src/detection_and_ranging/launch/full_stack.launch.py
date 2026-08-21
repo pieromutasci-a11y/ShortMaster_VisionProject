@@ -53,6 +53,13 @@ def generate_launch_description():
         output='screen',
     )
 
+    center_computation_node = Node(
+        package='detection_and_ranging',
+        executable='center_computation',
+        name='center_computation_node',
+        output='screen',
+    )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -68,5 +75,6 @@ def generate_launch_description():
         rviz_config_arg,
         simulation_launch,
         detection_node,
+        center_computation_node,
         rviz_node,
     ])
