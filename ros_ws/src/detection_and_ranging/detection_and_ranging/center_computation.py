@@ -39,7 +39,8 @@ from tf2_geometry_msgs import do_transform_point
 
 
 CAN_RADIUS = 0.04    # raggio noto della lattina (prior sull'oggetto)
-CAN_HEIGHT = 0.15     # altezza nota della lattina, usata solo per la lunghezza del marker
+AXIS_MARKER_LENGTH = 0.40   # lunghezza del segmento disegnato in RViz (solo visualizzazione,
+                              # volutamente piu' lungo della lattina vera per essere ben visibile)
 TARGET_FRAME = 'base_footprint'   # frame con asse Z verticale (gravita'), per disegnare l'asse correttamente
 
 
@@ -114,8 +115,8 @@ class CenterComputationNode(Node):
         marker.color.b = 0.0
         marker.color.a = 1.0
         marker.points = [
-            Point(x=cx, y=cy, z=cz - CAN_HEIGHT / 2.0),
-            Point(x=cx, y=cy, z=cz + CAN_HEIGHT / 2.0),
+            Point(x=cx, y=cy, z=cz - AXIS_MARKER_LENGTH / 2.0),
+            Point(x=cx, y=cy, z=cz + AXIS_MARKER_LENGTH / 2.0),
         ]
 
         self.axis_marker_pub.publish(marker)
