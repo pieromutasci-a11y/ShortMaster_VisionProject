@@ -28,9 +28,14 @@ CAN_RADIUS e' un prior sull'OGGETTO (non cambia se cambia la scena), quindi
 resta valido su tavoli/mondi diversi -- a differenza di un'altezza del tavolo
 hardcoded, che sarebbe un prior sulla SCENA e non generalizzerebbe.
 
-Pubblica il centro corretto (gia' in TARGET_FRAME) su cokecan_center, e un
-marker RViz che disegna un segmento verticale passante per quel centro
-(invece del solo pallino).
+Il calcolo avviene internamente in TARGET_FRAME (deve, per il motivo sopra),
+ma il punto corretto viene ri-trasformato indietro nel frame originale del
+messaggio in ingresso prima di pubblicarlo su cokecan_center -- cosi' resta
+nello stesso sistema di riferimento di yolo/coke_can_position, comodo per
+confrontare i due punti direttamente. L'eventuale trasformazione verso il
+frame del braccio (per l'ottimizzatore) resta un passo successivo, non fatto
+qui. Il marker RViz invece va disegnato in TARGET_FRAME (deve essere davvero
+verticale), quindi usa la versione del centro non ri-trasformata.
 """
 import math
 
@@ -106,15 +111,33 @@ class CenterComputationNode(Node):
         ux = dx / horizontal_norm
         uy = dy / horizontal_norm
 
-        center = PointStamped()
-        center.header.frame_id = TARGET_FRAME
-        center.header.stamp = msg.header.stamp
-        center.point.x = px + CAN_RADIUS * ux
-        center.point.y = py + CAN_RADIUS * uy
-        center.point.z = pz
+        center_in_target = PointStamped()
+        center_in_target.header.frame_id = TARGET_FRAME
+        center_in_target.header.stamp = msg.header.stamp
+        center_in_target.point.x = px + CAN_RADIUS * ux
+        center_in_target.point.y = py + CAN_RADIUS * uy
+        center_in_target.point.z = pz
 
-        self.center_pub.publish(center)
-        self.publish_axis_marker(center)
+        # Ri-trasforma il centro corretto nel frame originale del messaggio,
+        # cosi' cokecan_center e yolo/coke_can_position sono confrontabili
+        # direttamente (stesso frame). La trasformazione verso il frame del
+        # braccio, se serve, la fara' l'ottimizzatore.
+        try:
+            inverse_transform = self.tf_buffer.lookup_transform(
+                msg.header.frame_id, TARGET_FRAME, rclpy.time.Time()
+            )
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException) as error:
+            self.get_logger().warn(
+                f'TF {msg.header.frame_id} <- {TARGET_FRAME} non disponibile: {error}',
+                throttle_duration_sec=2.0
+            )
+            return
+
+        center_in_source = do_transform_point(center_in_target, inverse_transform)
+
+        self.center_pub.publish(center_in_source)
+        self.publish_axis_marker(center_in_target)
 
     def publish_axis_marker(self, center: PointStamped):
         cx = center.point.x
