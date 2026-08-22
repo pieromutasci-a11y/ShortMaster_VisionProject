@@ -28,14 +28,15 @@ CAN_RADIUS e' un prior sull'OGGETTO (non cambia se cambia la scena), quindi
 resta valido su tavoli/mondi diversi -- a differenza di un'altezza del tavolo
 hardcoded, che sarebbe un prior sulla SCENA e non generalizzerebbe.
 
-Il calcolo avviene internamente in TARGET_FRAME (deve, per il motivo sopra),
-ma il punto corretto viene ri-trasformato indietro nel frame originale del
-messaggio in ingresso prima di pubblicarlo su cokecan_center -- cosi' resta
-nello stesso sistema di riferimento di yolo/coke_can_position, comodo per
-confrontare i due punti direttamente. L'eventuale trasformazione verso il
-frame del braccio (per l'ottimizzatore) resta un passo successivo, non fatto
-qui. Il marker RViz invece va disegnato in TARGET_FRAME (deve essere davvero
-verticale), quindi usa la versione del centro non ri-trasformata.
+Il calcolo avviene internamente in TARGET_FRAME (deve, per il motivo sopra).
+Il centro corretto viene pubblicato su DUE topic, stesso punto in due frame:
+  - cokecan_center: ri-trasformato nel frame originale del messaggio in
+    ingresso, cosi' resta confrontabile direttamente con yolo/coke_can_position.
+  - cokecan_center_base_footprint: gia' in TARGET_FRAME, senza bisogno di
+    altre trasformazioni -- comodo per chi (es. l'ottimizzatore) deve usarlo
+    direttamente nel frame del robot.
+Il marker RViz usa anch'esso la versione in TARGET_FRAME (deve essere
+davvero verticale).
 """
 import math
 
@@ -63,6 +64,9 @@ class CenterComputationNode(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.center_pub = self.create_publisher(PointStamped, 'cokecan_center', 10)
+        self.center_base_footprint_pub = self.create_publisher(
+            PointStamped, 'cokecan_center_base_footprint', 10
+        )
         self.axis_marker_pub = self.create_publisher(Marker, 'cokecan_center_axis', 10)
 
         self.position_sub = self.create_subscription(
@@ -137,6 +141,7 @@ class CenterComputationNode(Node):
         center_in_source = do_transform_point(center_in_target, inverse_transform)
 
         self.center_pub.publish(center_in_source)
+        self.center_base_footprint_pub.publish(center_in_target)
         self.publish_axis_marker(center_in_target)
 
     def publish_axis_marker(self, center: PointStamped):
