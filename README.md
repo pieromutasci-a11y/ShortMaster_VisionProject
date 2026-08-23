@@ -48,6 +48,11 @@ robot per portare il braccio verso l'oggetto:
 - [`detection_and_ranging`](ros_ws/src/detection_and_ranging) — rileva
   l'oggetto in tempo reale (YOLOv8) e, fondendo la detection con la depth
   della camera, ne stima la posizione 3D.
+- [`occlusion_handler`](ros_ws/src/occlusion_handler) — evoluzione a se'
+  stante dello stesso concetto, con gestione delle occlusioni tra gli
+  oggetti tracciati e campionamento di piu' punti sulla superficie del
+  target ([`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs)) per il fit
+  del cerchio/asse a valle.
 - [`pose_optimizer`](ros_ws/src/pose_optimizer) — dato un target, calcola
   (via MoveIt + plugin di cinematica inversa PickIK) una configurazione del
   braccio che lo raggiunga, ottimizzando la posa invece di affidarsi alla
@@ -61,6 +66,8 @@ ros_ws/                     # workspace ROS2 (colcon)
 └── src/
     ├── vision_pipeline/       # dataset + training/eval YOLO + nodi di raccolta dati + launch simulazione
     ├── detection_and_ranging/ # detection + stima posizione 3D a runtime
+    ├── occlusion_handler/     # detection con gestione occlusioni tra oggetti tracciati
+    ├── tiago_vision_msgs/     # messaggi custom usati da occlusion_handler
     ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + PickIK)
     └── pal_*, tiago_pro_*/    # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
 ```
