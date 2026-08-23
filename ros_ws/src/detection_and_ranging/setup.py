@@ -27,6 +27,7 @@ setup(
         'console_scripts': [
             'rt_object_detection = detection_and_ranging.rt_object_detection_node:main',
             'center_computation = detection_and_ranging.center_computation:main',
+            'detection_and_occlusion_handler = detection_and_ranging.detection_and_occlusion_handler:main',
         ],
     },
 )

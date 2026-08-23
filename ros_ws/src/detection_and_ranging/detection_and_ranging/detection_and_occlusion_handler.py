@@ -172,7 +172,7 @@ class RtObjectDetectionNode(Node):
     """
 
     def __init__(self):
-        super().__init__('rt_object_detection_node')
+        super().__init__('detection_and_occlusion_handler_node')
 
         # QoS profile matching typical camera driver settings (best effort,
         # shallow history — we don't need every historical frame).
