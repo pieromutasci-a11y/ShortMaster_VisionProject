@@ -40,7 +40,8 @@ ros2 launch vision_pipeline dataset_collection.launch.py save_dir:=/home/user/ro
 ### Script YOLO (`vision_pipeline/yolo/`)
 
 Non sono nodi ROS (non dipendono da rclpy), ma condividono lo stesso workspace
-dati/modelli. Installate le dipendenze con `pip install -r requirements.txt`.
+dati/modelli. Le dipendenze Python (`ultralytics`, `wandb`, `pyyaml`,
+`matplotlib`) sono installate nell'immagine Docker (`docker_ws/Dockerfile.PAL_YOLO`).
 
 | Script | Eseguibile | Descrizione |
 |---|---|---|

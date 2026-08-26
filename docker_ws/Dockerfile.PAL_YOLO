@@ -9,6 +9,7 @@ RUN sudo apt-get update && sudo apt-get install -y \
     ros-humble-teleop-twist-keyboard \
     && sudo rm -rf /var/lib/apt/lists/*
 
-# Installiamo la libreria di YOLOv8
-RUN pip3 install ultralytics
+# Installiamo la libreria di YOLOv8 e le dipendenze usate dagli script del
+# pacchetto vision_pipeline (training/sweep/confronto modelli)
+RUN pip3 install ultralytics wandb pyyaml matplotlib
 RUN pip3 install "numpy<2" --force-reinstall
