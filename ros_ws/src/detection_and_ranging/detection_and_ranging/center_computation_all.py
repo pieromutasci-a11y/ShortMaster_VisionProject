@@ -45,8 +45,14 @@ Marker non sanno portare sta fuori dal payload:
 
   - la CLASSE sta nel nome del topic: una subscription per classe su
     yolo_all/<classe>_position, e publisher speculari su
-    centers_all/<classe>_center e centers_all/<classe>_axis. La callback sa
-    gia' quale raggio applicare perche' sa da quale topic e' stata chiamata.
+    centers_all/<classe>_center, centers_all/<classe>_center_base_footprint
+    e centers_all/<classe>_axis. La callback sa gia' quale raggio applicare
+    perche' sa da quale topic e' stata chiamata.
+  - come nel nodo single-object, il centro corretto va su DUE topic, stesso
+    punto in due frame: centers_all/<classe>_center (ri-trasformato nel
+    frame camera, confrontabile con yolo_all/<classe>_position) e
+    centers_all/<classe>_center_base_footprint (gia' in TARGET_FRAME, pronto
+    per chi lo usa nel frame del robot).
   - le ISTANZE MULTIPLE sono piu' messaggi consecutivi sullo stesso topic,
     riconoscibili perche' condividono header.stamp (vengono dallo stesso
     frame camera). Il contatore degli id marker si azzera al cambio di stamp,
@@ -121,6 +127,7 @@ class CenterComputationAllNode(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.center_pubs = {}
+        self.center_base_footprint_pubs = {}
         self.axis_marker_pubs = {}
         self.subscriptions_by_class = {}
 
@@ -135,6 +142,9 @@ class CenterComputationAllNode(Node):
 
             self.center_pubs[class_name] = self.create_publisher(
                 PointStamped, f'centers_all/{slug}_center', 10
+            )
+            self.center_base_footprint_pubs[class_name] = self.create_publisher(
+                PointStamped, f'centers_all/{slug}_center_base_footprint', 10
             )
             self.axis_marker_pubs[class_name] = self.create_publisher(
                 Marker, f'centers_all/{slug}_axis', 10
@@ -227,6 +237,7 @@ class CenterComputationAllNode(Node):
         center_in_source = do_transform_point(center_in_target, inverse_transform)
 
         self.center_pubs[class_name].publish(center_in_source)
+        self.center_base_footprint_pubs[class_name].publish(center_in_target)
         self.publish_axis_marker(center_in_target, class_name, marker_id)
 
     def next_marker_id(self, class_name, stamp):
