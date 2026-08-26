@@ -47,12 +47,14 @@ dati/modelli. Installate le dipendenze con `pip install -r requirements.txt`.
 | `train.py` | `yolo_train` | Training YOLOv8 su `data/training_dataset.yolov8`. |
 | `evaluate.py` | `yolo_evaluate` | Valutazione di un modello sul test set (metriche globali + per classe + inferenza con box disegnati). Modello configurabile via env var `YOLO_MODEL_PATH`. |
 | `predict.py` | `yolo_predict` | Inferenza con un modello YOLOv8 pre-addestrato (COCO) su una cartella di immagini. |
+| `models_comparison.py` | `yolo_models_comparison` | Confronto visivo rapido tra tutti i modelli dello sweep: fa inferenza con i pesi (`best.pt`) di ogni run su una singola immagine del test set (coca frontale, `frame_000052`), salvando un'immagine annotata per modello in `models/runs/models_comparison/<run_id>.png`. Salta automaticamente le run senza `best.pt` (interrotte/incomplete). |
 | `sweep/` | — | Script per hyperparameter sweep con W&B (`run_sweep.py`, `resume_sweep.py`, `train_sweep.py`, `sweep_config.yaml`). Vanno lanciati direttamente con `python3` dalla cartella `sweep/` (non sono entry point ROS/console perché dipendono da `sweep_config.yaml` nella stessa cartella). |
 
 ```bash
 ros2 run vision_pipeline yolo_train
 ros2 run vision_pipeline yolo_evaluate
 ros2 run vision_pipeline yolo_predict
+ros2 run vision_pipeline yolo_models_comparison
 cd install/vision_pipeline/lib/python3*/site-packages/vision_pipeline/yolo/sweep  # oppure src/vision_pipeline/vision_pipeline/yolo/sweep in sviluppo
 python3 run_sweep.py
 ```
