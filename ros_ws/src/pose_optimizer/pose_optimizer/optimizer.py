@@ -14,6 +14,10 @@ from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
+import tf2_ros
+import tf2_geometry_msgs  # noqa: F401  (registra il supporto a PoseStamped per do_transform_pose)
+from tf2_geometry_msgs import do_transform_pose
+
 
 # Topic del centro dell'oggetto (gia' in base_footprint, pubblicato da
 # detection_and_ranging -- vedi center_computation.py/center_computation_all.py).
@@ -56,50 +60,56 @@ OBSTACLE_DIMENSIONS = {
 # braccio in ogni momento, qualunque sia la posizione del robot.
 TABLE_FRAME = 'map'
 
-# --- ATTENZIONE: 'map' qui NON e' il frame del mondo Gazebo ---
-# La simulazione parte con slam:=True (slam_toolbox, live): il frame 'map'
-# che ne risulta nasce coincidente con 'odom'/base_footprint nell'istante in
-# cui il robot e' spawnato -- origine e orientamento sono quelli della POSA
-# DI SPAWN del robot, non quelli del mondo Gazebo. Usare direttamente le
-# coordinate del world file (frame Gazebo) come se fossero coordinate 'map'
-# e' un bug via -- il box finisce nel punto sbagliato rispetto al robot, e
-# MoveIt pianifica come se il tavolo non ci fosse li' (causa quasi certa
-# dell'urto reale col tavolo).
+# --- Come si ottiene la posa del tavolo in 'map' ---
+# TENTATIVO PRECEDENTE (sbagliato, verificato in RViz -- il box finiva
+# praticamente sotto al robot): calcolare a mano la trasformazione mondo
+# Gazebo -> 'map' assumendo che 'map' nasca coincidente con la posa di spawn
+# del robot (convenzione tipica di slam_toolbox, ma evidentemente non
+# verificata giusta in questa configurazione specifica).
+#
+# Invece di indovinare ancora la convenzione di 'map', usiamo TF per
+# leggere la relazione VERA: sappiamo con certezza (dal world file e da
+# robot_spawn.launch.py, entrambi dati reali) dove sta il tavolo RISPETTO
+# AL ROBOT nell'istante in cui e' stato spawnato -- quell'offset locale e'
+# per costruzione corretto, non dipende da nessuna assunzione su 'map'.
+# All'avvio del nodo (il robot non si e' ancora mosso dalla posa di spawn,
+# nulla in questo stack comanda la base) chiediamo a TF la trasformazione
+# REALE base_footprint -> map in quel momento, e la usiamo per convertire
+# quell'offset locale noto in una posa 'map' -- qualunque sia la
+# convenzione usata da slam_toolbox, il risultato e' corretto perche' non
+# la stiamo piu' assumendo, la stiamo leggendo.
 #
 # Posa di spawn del robot nel mondo Gazebo (tiago_pro_gazebo/launch/
-# robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57").
+# robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57") e posa vera del tavolo nel
+# mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world, modello
+# s3_table, nessuna rotazione) -- da questi due soli dati ricaviamo la posa
+# del tavolo RISPETTO AL ROBOT allo spawn.
 ROBOT_SPAWN_WORLD_XY = (5.0, 3.5)
 ROBOT_SPAWN_WORLD_YAW = 1.57
-
-# Posa vera del tavolo nel mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world,
-# modello s3_table, nessuna rotazione).
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 
 
-def _world_xy_to_map_xy(world_xy, robot_spawn_xy=ROBOT_SPAWN_WORLD_XY,
-                         robot_spawn_yaw=ROBOT_SPAWN_WORLD_YAW):
-    """
-    'map' e' il frame Gazebo ruotato/traslato: origine sulla posa di spawn
-    del robot, asse x nella direzione in cui il robot guardava in quel
-    momento. Quindi un punto fisso del mondo si converte in 'map' con
-    un'unica rotazione rigida (traslazione all'origine di spawn, poi
-    rotazione di -yaw di spawn) -- stessa trasformazione, in forma chiusa,
-    di quella che farebbe TF tra i due frame in quell'istante.
-    """
-    dx = world_xy[0] - robot_spawn_xy[0]
-    dy = world_xy[1] - robot_spawn_xy[1]
-    c, s = np.cos(robot_spawn_yaw), np.sin(robot_spawn_yaw)
+def _world_xy_to_local_xy(world_xy, origin_xy, origin_yaw):
+    """Converte un punto del mondo in coordinate locali rispetto a una posa
+    (origin_xy, origin_yaw), anch'essa espressa nel mondo -- pura geometria,
+    stessa trasformazione che farebbe TF tra due frame in quella relazione."""
+    dx = world_xy[0] - origin_xy[0]
+    dy = world_xy[1] - origin_xy[1]
+    c, s = np.cos(origin_yaw), np.sin(origin_yaw)
     return (dx * c + dy * s, -dx * s + dy * c)
 
 
-# Tavolo espresso in 'map' (vedi sopra) -- circa (1.5, 0.0): il robot
-# spawna gia' rivolto verso il tavolo, quindi il tavolo finisce quasi
-# esattamente davanti a lui lungo l'asse x di 'map'.
-TABLE_POSITION_XY = _world_xy_to_map_xy(TABLE_WORLD_POSITION_XY)
-
-# Il box va anche ruotato della stessa rotazione (il tavolo non e' ruotato
-# nel mondo, ma 'map' si', quindi visto da 'map' lo e'): -yaw di spawn.
-TABLE_ORIENTATION_QUAT = R.from_euler('z', -ROBOT_SPAWN_WORLD_YAW).as_quat()  # (x, y, z, w)
+# Tavolo rispetto al robot allo spawn -- circa (1.5, 0.0): il robot spawna
+# gia' rivolto verso il tavolo, quindi il tavolo e' quasi esattamente
+# davanti a lui lungo il suo asse x. Questo E' certo (deriva solo da due
+# pose vere, non da un'assunzione su 'map') -- va pero' letto come posa in
+# base_footprint AL MOMENTO DELLO SPAWN, non in 'map'.
+TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN = _world_xy_to_local_xy(
+    TABLE_WORLD_POSITION_XY, ROBOT_SPAWN_WORLD_XY, ROBOT_SPAWN_WORLD_YAW
+)
+TABLE_ORIENTATION_QUAT_AT_SPAWN = R.from_euler(
+    'z', -ROBOT_SPAWN_WORLD_YAW
+).as_quat()  # (x, y, z, w)
 
 # Geometria vera (pal_gazebo_worlds/models/table_0m8/table.sdf): piano
 # 1.0 x 0.8 x 0.03 a z locale 0.8 -> superficie a z=0.815 (coerente col resto
@@ -125,6 +135,8 @@ class MoveGroupClient(Node):
         self._candidates_marker_pub = self.create_publisher(
             MarkerArray, '/grasp_candidates_marker', 10
         )
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
         # La coca (topic single-object) e' il target; pringles/biscuits
@@ -170,16 +182,54 @@ class MoveGroupClient(Node):
         )
 
     def add_table_obstacle(self, frame_id=TABLE_FRAME,
-                            position=(*TABLE_POSITION_XY, TABLE_SURFACE_TOP_Z / 2.0),
-                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z),
-                            orientation=TABLE_ORIENTATION_QUAT):
+                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z)):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
         ancorato a TABLE_FRAME (fisso nel mondo, non in base_footprint -- vedi
-        commento sopra le costanti TABLE_*). Posizione E orientamento sono
-        gia' convertiti da coordinate mondo Gazebo a coordinate 'map' (vedi
-        _world_xy_to_map_xy) -- 'map' non coincide col mondo Gazebo.
+        commento sopra le costanti TABLE_*).
+
+        La posa del tavolo E' NOTA rispetto al robot allo spawn
+        (TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN, derivata da due pose vere,
+        vedi sopra) -- ma va pubblicata in TABLE_FRAME, che e' fisso nel
+        mondo. Invece di indovinare come TABLE_FRAME si relaziona al mondo
+        Gazebo (tentativo precedente, verificato sbagliato: il box finiva
+        sotto al robot), chiediamo a TF la trasformazione VERA
+        base_footprint -> TABLE_FRAME in questo momento (il robot non si e'
+        ancora mosso dallo spawn) e la applichiamo alla posa nota -- cosi'
+        il risultato e' corretto qualunque sia la convenzione reale di
+        TABLE_FRAME, perche' non la stiamo piu' assumendo.
         """
+        table_in_base_footprint = PoseStamped()
+        table_in_base_footprint.header.frame_id = "base_footprint"
+        table_in_base_footprint.pose.position.x = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[0]
+        table_in_base_footprint.pose.position.y = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[1]
+        table_in_base_footprint.pose.position.z = TABLE_SURFACE_TOP_Z / 2.0
+        (table_in_base_footprint.pose.orientation.x,
+         table_in_base_footprint.pose.orientation.y,
+         table_in_base_footprint.pose.orientation.z,
+         table_in_base_footprint.pose.orientation.w) = TABLE_ORIENTATION_QUAT_AT_SPAWN
+
+        transform = None
+        for _ in range(20):
+            try:
+                transform = self.tf_buffer.lookup_transform(
+                    frame_id, "base_footprint", rclpy.time.Time()
+                )
+                break
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                    tf2_ros.ExtrapolationException) as error:
+                self.get_logger().warn(
+                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}"
+                )
+                rclpy.spin_once(self, timeout_sec=0.5)
+        if transform is None:
+            self.get_logger().error(
+                f"TF {frame_id} <- base_footprint mai arrivata: tavolo NON aggiunto come ostacolo."
+            )
+            return
+
+        pose_in_frame = do_transform_pose(table_in_base_footprint.pose, transform)
+
         obj = CollisionObject()
         obj.header.frame_id = frame_id
         obj.id = "table"
@@ -188,12 +238,8 @@ class MoveGroupClient(Node):
         primitive.type = SolidPrimitive.BOX
         primitive.dimensions = list(dimensions)
 
-        pose = Pose()
-        pose.position.x, pose.position.y, pose.position.z = position
-        pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = orientation
-
         obj.primitives.append(primitive)
-        obj.primitive_poses.append(pose)
+        obj.primitive_poses.append(pose_in_frame)
         obj.operation = CollisionObject.ADD
 
         scene = PlanningScene()
@@ -536,7 +582,7 @@ def main():
 
     # --- Ostacolo: tavolo (noto a priori, non dalla detection -- vedi TABLE_*) ---
     print(f"Aggiungo ostacolo 'table' in {TABLE_FRAME} "
-          f"a x={TABLE_POSITION_XY[0]} y={TABLE_POSITION_XY[1]}...")
+          f"(posa nota rispetto al robot, convertita via TF vera)...")
     node.add_table_obstacle()
 
     # Niente marker per il centro della lattina qui: lo pubblica gia'
