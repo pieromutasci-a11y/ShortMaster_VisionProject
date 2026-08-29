@@ -355,6 +355,16 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     Campiona diversi valori di yaw, prova l'IK per ciascuno (con KDL,
     solo pianificazione -- il braccio non si muove qui), e restituisce
     la soluzione più lontana dai limiti di giunto.
+
+    Ogni candidato viene pianificato a partire dallo stato VERO attuale del
+    braccio (start_positions=None -> is_diff=True), non da una posa finta.
+    Motivo: la fattibilita' IK e il costo (distanza dai limiti) dipendono da
+    dove il braccio si trova davvero adesso -- una configurazione a giunti
+    tutti a zero e' arbitraria e potrebbe risultare irraggiungibile o
+    avere un costo che non rispecchia affatto cosa succedera' quando poi si
+    esegue per davvero. Valutare i candidati dallo stesso stato reale da cui
+    poi si esegue e' l'unico modo per far si' che la classifica trovata qui
+    sia effettivamente quella giusta per il robot vero.
     """
     migliore = None
     migliore_costo = -5
@@ -365,7 +375,7 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
         target = costruisci_target(position, yaw, raggio)
         pubblica_marker_target(node, (target.pose.position.x, target.pose.position.y, target.pose.position.z))
 
-        result = node.send_goal(target, start_positions=[0.0] * 7, plan_only=True)
+        result = node.send_goal(target, start_positions=None, plan_only=True)
 
         if result and result.result.error_code.val == 1:
             traj = result.result.planned_trajectory.joint_trajectory
