@@ -153,8 +153,13 @@ class MoveGroupClient(Node):
         self._candidates_marker_pub = self.create_publisher(
             MarkerArray, '/grasp_candidates_marker', 10
         )
-        self._table_marker_pub = self.create_publisher(
-            Marker, '/table_obstacle_debug_marker', 10
+        # Marker di debug per TUTTI i nostri ostacoli (tavolo, pringles,
+        # biscotti) -- stesse pose/dimensioni dei CollisionObject inviati a
+        # MoveIt, ma su un topic tutto nostro: PlanningScene di RViz mischia
+        # i nostri ostacoli con l'octomap della percezione (es. il pavimento,
+        # enorme) senza modo di separarli, quindi qui vediamo solo i nostri.
+        self._obstacles_marker_pub = self.create_publisher(
+            Marker, '/obstacles_debug_marker', 10
         )
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -321,7 +326,7 @@ class MoveGroupClient(Node):
         marker.color.a = 0.5
         for _ in range(5):
             marker.header.stamp = self.get_clock().now().to_msg()
-            self._table_marker_pub.publish(marker)
+            self._obstacles_marker_pub.publish(marker)
             rclpy.spin_once(self, timeout_sec=0.3)
 
     def wait_for_topics(self, attribute_getters, timeout_sec=10.0):
@@ -371,6 +376,26 @@ class MoveGroupClient(Node):
 
         for _ in range(5):
             self._scene_pub.publish(scene)
+            rclpy.spin_once(self, timeout_sec=0.3)
+
+        # Marker di debug, stesso motivo del tavolo (vedi add_table_obstacle):
+        # visibile senza il rumore dell'octomap di PlanningScene.
+        marker = Marker()
+        marker.header.frame_id = center.header.frame_id
+        marker.ns = f"{object_id}_obstacle_debug"
+        marker.id = 0
+        marker.type = Marker.CYLINDER
+        marker.action = Marker.ADD
+        marker.pose = pose
+        marker.scale.x = marker.scale.y = radius * 2.0  # CYLINDER Marker vuole il diametro, non il raggio
+        marker.scale.z = height
+        marker.color.r = 1.0
+        marker.color.g = 0.5
+        marker.color.b = 0.0
+        marker.color.a = 0.5
+        for _ in range(5):
+            marker.header.stamp = self.get_clock().now().to_msg()
+            self._obstacles_marker_pub.publish(marker)
             rclpy.spin_once(self, timeout_sec=0.3)
 
     def publish_candidates_markers(self, candidati, frame_id="base_footprint"):

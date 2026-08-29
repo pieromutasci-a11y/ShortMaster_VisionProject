@@ -655,19 +655,19 @@ Visualization Manager:
     Value: true
   - Class: rviz_default_plugins/Marker
     Enabled: true
-    Name: Table obstacle (debug, pose_optimizer)
+    Name: Ostacoli (debug, pose_optimizer -- tavolo/pringles/biscotti)
     Namespaces: {}
     Topic:
       Depth: 5
       Durability Policy: Volatile
       History Policy: Keep Last
       Reliability Policy: Reliable
-      Value: /table_obstacle_debug_marker
+      Value: /obstacles_debug_marker
     Value: true
   - Class: moveit_rviz_plugin/PlanningScene
     Enabled: false
     Move Group Namespace: ''
-    Name: PlanningScene (SPENTA -- mostra anche l'octomap del pavimento, il rettangolo verde sbagliato sotto al robot. Per vedere SOLO il tavolo vero usa "Table obstacle (debug, pose_optimizer)" qui sotto)
+    Name: PlanningScene (SPENTA -- mostra anche l'octomap del pavimento, il rettangolo verde sbagliato sotto al robot. Per vedere SOLO i nostri ostacoli veri usa "Ostacoli (debug, pose_optimizer)" qui sopra)
     Planning Scene Topic: /monitored_planning_scene
     Robot Description: robot_description
     Scene Geometry:
