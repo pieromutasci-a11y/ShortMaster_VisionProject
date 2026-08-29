@@ -209,8 +209,14 @@ class MoveGroupClient(Node):
          table_in_base_footprint.pose.orientation.z,
          table_in_base_footprint.pose.orientation.w) = TABLE_ORIENTATION_QUAT_AT_SPAWN
 
+        # 'map' puo' metterci parecchio ad apparire nell'albero TF
+        # all'avvio (slam_toolbox + navigazione): visto in pratica un
+        # "due alberi TF non connessi" per oltre 15s prima che si
+        # stabilizzi. Finestra di attesa larga apposta (60 tentativi x
+        # 0.5s = 30s) per non perdere l'ostacolo tavolo per un timeout
+        # troppo stretto.
         transform = None
-        for _ in range(20):
+        for _ in range(60):
             try:
                 transform = self.tf_buffer.lookup_transform(
                     frame_id, "base_footprint", rclpy.time.Time()
@@ -219,7 +225,8 @@ class MoveGroupClient(Node):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
                     tf2_ros.ExtrapolationException) as error:
                 self.get_logger().warn(
-                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}"
+                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}",
+                    throttle_duration_sec=2.0,
                 )
                 rclpy.spin_once(self, timeout_sec=0.5)
         if transform is None:
