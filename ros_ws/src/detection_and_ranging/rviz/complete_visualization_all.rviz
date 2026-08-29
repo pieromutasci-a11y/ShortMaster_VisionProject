@@ -668,6 +668,17 @@ Visualization Manager:
       Reliability Policy: Reliable
       Value: /centers_all/dinner_table_center
     Value: false
+  - Class: rviz_default_plugins/MarkerArray
+    Enabled: true
+    Name: Grasp candidates (pose_optimizer)
+    Namespaces: {}
+    Topic:
+      Depth: 5
+      Durability Policy: Volatile
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /grasp_candidates_marker
+    Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

@@ -10,7 +10,6 @@ from moveit_msgs.msg import (
 )
 from geometry_msgs.msg import PoseStamped, Pose, PointStamped
 from shape_msgs.msg import SolidPrimitive
-from sensor_msgs.msg import JointState
 from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
 import numpy as np
@@ -78,7 +77,6 @@ class MoveGroupClient(Node):
     def __init__(self):
         super().__init__('move_group_client_kdl')
         self._client = ActionClient(self, MoveGroup, '/move_action')
-        self._joint_pub = self.create_publisher(JointState, '/joint_states', 10)
         self._scene_pub = self.create_publisher(PlanningScene, '/planning_scene', 10)
         self._candidates_marker_pub = self.create_publisher(
             MarkerArray, '/grasp_candidates_marker', 10
@@ -321,16 +319,6 @@ class MoveGroupClient(Node):
         rclpy.spin_until_future_complete(self, result_future)
         return result_future.result()
 
-    def publish_joint_state(self, joint_names, positions):
-        msg = JointState()
-        msg.name = joint_names
-        msg.position = positions
-
-        for _ in range(10):
-            msg.header.stamp = self.get_clock().now().to_msg()
-            self._joint_pub.publish(msg)
-            rclpy.spin_once(self, timeout_sec=0.5)
-
 
 def orientamento_pinza_orizzontale(yaw=0.0):
     """
@@ -414,11 +402,6 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
             costo = calcola_distanza_limiti(traj.joint_names, positions)
 
             print(f"yaw={yaw:.2f} rad -> SUCCESSO, costo={costo:.4f}")
-
-            node.publish_joint_state(
-                        list(traj.joint_names) + ['torso_lift_joint'],
-                        list(positions) + [0.0]
-                    )
 
             candidati[i]['stato'] = 'ok'
 
