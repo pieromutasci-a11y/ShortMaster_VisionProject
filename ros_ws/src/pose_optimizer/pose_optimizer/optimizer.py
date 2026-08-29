@@ -416,17 +416,24 @@ def main():
     node = MoveGroupClient()
 
     # --- Aspetta la detection del target (la coca) ---
-    # Senza questo, si rischia di partire con latest_coke_center ancora None
-    # (il nodo di detection puo' metterci qualche secondo, specie con YOLO
-    # su CPU) e piantare subito dopo su un attributo mancante.
-    print("Aspetto la detection della coca su cokecan_center_base_footprint...")
-    if not node.wait_for_topics([lambda n: n.latest_coke_center], timeout_sec=15.0):
+    # Il target viene letto da centers_all/coke_can_center_base_footprint,
+    # cioe' dallo stack multi-oggetto (rt_object_detection_node_all.py +
+    # center_computation_all.py, lanciati da full_stack_all.launch.py) —
+    # e' quello stack che pubblica anche gli ostacoli (pringles/biscotti),
+    # quindi e' l'unico che nella pratica gira davvero insieme a questo nodo.
+    # Il topic single-object cokecan_center_base_footprint (stack
+    # full_stack.launch.py, senza ostacoli) NON viene piu' usato come target:
+    # se non giri quello stack, restava in attesa di un topic mai pubblicato.
+    print("Aspetto la detection della coca su centers_all/coke_can_center_base_footprint...")
+    if not node.wait_for_topics(
+        [lambda n: n.latest_centers_all.get('coke can')], timeout_sec=15.0
+    ):
         print("Nessuna detection della coca ricevuta in tempo, esco.")
         node.destroy_node()
         rclpy.shutdown()
         return
 
-    coke_center = node.latest_coke_center
+    coke_center = node.latest_centers_all['coke can']
     posizione_target = (coke_center.point.x, coke_center.point.y, coke_center.point.z)
     print(f"Target (coca): x={posizione_target[0]:.3f} y={posizione_target[1]:.3f} z={posizione_target[2]:.3f}")
 
