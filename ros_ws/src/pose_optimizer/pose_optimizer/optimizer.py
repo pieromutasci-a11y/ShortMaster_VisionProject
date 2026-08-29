@@ -308,17 +308,26 @@ class MoveGroupClient(Node):
         # mischia il nostro CollisionObject con l'Octomap della percezione
         # (voxel dalla depth camera, spesso enorme -- es. il pavimento
         # intero) nello stesso colore, rendendo impossibile distinguerli a
-        # vista. Questo marker disegna ESATTAMENTE la stessa posa/dimensioni
-        # appena pubblicate come CollisionObject, ma su un topic tutto
-        # nostro -- quello che vedi qui e' inequivocabilmente il nostro box,
-        # nient'altro.
+        # vista. Questo marker disegna la stessa posa/dimensioni appena
+        # pubblicate come CollisionObject, ma su un topic tutto nostro.
+        #
+        # Pubblicato in base_footprint (la posa nota di partenza, PRIMA
+        # della conversione in TABLE_FRAME), non in TABLE_FRAME: e' solo per
+        # vederlo, non deve restare fisso nel mondo come il vero ostacolo
+        # mandato a MoveIt -- e cosi' RViz non deve risolvere anche lui la
+        # TF base_footprint->TABLE_FRAME per renderizzarlo (la stessa che ci
+        # da' problemi altrove: se non e' disponibile ESATTAMENTE
+        # nell'istante in cui RViz disegna, anche se un attimo prima
+        # l'avevamo gia' ottenuta noi con successo, il marker resterebbe
+        # invisibile in silenzio). base_footprint invece e' quasi sempre il
+        # Fixed Frame di RViz, nessuna TF extra da risolvere per vederlo.
         marker = Marker()
-        marker.header.frame_id = frame_id
+        marker.header.frame_id = "base_footprint"
         marker.ns = "table_obstacle_debug"
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose = pose_in_frame
+        marker.pose = table_in_base_footprint.pose
         marker.scale.x, marker.scale.y, marker.scale.z = dimensions
         marker.color.r = 1.0
         marker.color.g = 0.5
