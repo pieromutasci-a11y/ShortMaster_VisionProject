@@ -189,7 +189,7 @@ def topic_slug(class_name):
 
 class MoveGroupClient(Node):
     def __init__(self):
-        super().__init__('move_group_client_kdl')
+        super().__init__('joint_margin_optimizer')
         self._client = ActionClient(self, MoveGroup, '/move_action')
         self._scene_pub = self.create_publisher(PlanningScene, '/planning_scene', 10)
         self._candidates_marker_pub = self.create_publisher(

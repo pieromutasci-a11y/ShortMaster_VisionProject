@@ -18,12 +18,12 @@ setup(
     zip_safe=True,
     maintainer='pieromutasci',
     maintainer_email='pieromutasci@gmail.com',
-    description='IK pose optimization (MoveIt + PickIK) for grasping targets detected by detection_and_ranging.',
+    description='IK pose optimization nodes (MoveIt + KDL) for grasping targets detected by detection_and_ranging. Ogni nodo prende il nome dal criterio di scelta tra i candidati che ottimizza.',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pose_optimizer_node = pose_optimizer.optimizer:main',
+            'joint_margin_optimizer = pose_optimizer.joint_margin_optimizer:main',
         ],
     },
 )
