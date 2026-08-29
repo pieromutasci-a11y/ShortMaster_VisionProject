@@ -270,6 +270,12 @@ class MoveGroupClient(Node):
             self._scene_pub.publish(scene)
             rclpy.spin_once(self, timeout_sec=0.3)
 
+        self.get_logger().info(
+            f"Tavolo aggiunto in {frame_id} a "
+            f"x={pose_in_frame.position.x:.3f} y={pose_in_frame.position.y:.3f} "
+            f"z={pose_in_frame.position.z:.3f} (CollisionObject + marker debug pubblicati)."
+        )
+
         # Marker separato, SOLO per debug visivo: la PlanningScene di RViz
         # mischia il nostro CollisionObject con l'Octomap della percezione
         # (voxel dalla depth camera, spesso enorme -- es. il pavimento
