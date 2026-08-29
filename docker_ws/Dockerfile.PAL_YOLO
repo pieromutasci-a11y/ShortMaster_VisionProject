@@ -12,4 +12,13 @@ RUN sudo apt-get update && sudo apt-get install -y \
 # Installiamo la libreria di YOLOv8 e le dipendenze usate dagli script del
 # pacchetto vision_pipeline (training/sweep/confronto modelli)
 RUN pip3 install ultralytics wandb pyyaml matplotlib
+# pin (pinocchio) e scipy (usato da pose_optimizer per le rotazioni) --
+# vanno installati PRIMA del pin di numpy: entrambi non vincolano la
+# versione di numpy e, se installati dopo, si tirano dietro numpy>=2 come
+# dipendenza, sovrascrivendo silenziosamente il pin "numpy<2" sottostante
+# (che serve a cv_bridge/opencv/ultralytics, compilati contro l'ABI di
+# numpy 1.x) -- il sintomo era rt_object_detection_node(_all).py che
+# crashava all'avvio per l'incompatibilita' binaria, quindi niente
+# immagini/centri/marker in RViz nello stack di detection.
+RUN pip3 install pin scipy
 RUN pip3 install "numpy<2" --force-reinstall
