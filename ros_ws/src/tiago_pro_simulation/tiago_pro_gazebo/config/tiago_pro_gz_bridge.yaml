@@ -72,13 +72,3 @@
   ros_type_name: "sensor_msgs/msg/Image"
   gz_type_name: "gz.msgs.Image"
   direction: GZ_TO_ROS
-
-# Posa VERA (ground truth, dalla fisica) di ogni entita' del mondo -- per
-# usare la posizione reale del robot invece di stime (odom/map, soggette a
-# rumore/deriva -- vedi pose_optimizer, che la usa per posizionare
-# esattamente gli ostacoli fissi nel mondo, es. il tavolo).
-- ros_topic_name: "/gazebo_ground_truth_poses"
-  gz_topic_name: "/world/indoor_multi_room/pose/info"
-  ros_type_name: "tf2_msgs/msg/TFMessage"
-  gz_type_name: "gz.msgs.Pose_V"
-  direction: GZ_TO_ROS

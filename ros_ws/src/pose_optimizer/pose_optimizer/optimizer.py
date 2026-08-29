@@ -11,13 +11,8 @@ from moveit_msgs.msg import (
 from geometry_msgs.msg import PoseStamped, Pose, PointStamped
 from shape_msgs.msg import SolidPrimitive
 from visualization_msgs.msg import Marker, MarkerArray
-from tf2_msgs.msg import TFMessage
 from scipy.spatial.transform import Rotation as R
 import numpy as np
-
-import tf2_ros
-import tf2_geometry_msgs  # noqa: F401  (registra il supporto a Pose per do_transform_pose)
-from tf2_geometry_msgs import do_transform_pose
 
 
 # Real Time Factor osservato della simulazione in questa macchina: gira a
@@ -69,65 +64,88 @@ OBSTACLE_DIMENSIONS = {
 # --- Tavolo: nota a priori, non dalla detection (difficile da ricostruire
 # dalla camera -- bordi larghi, gambe sottili, poca texture) ---
 #
-# IMPORTANTE: il tavolo e' fisso nel MONDO, non rispetto al robot -- che
-# invece si muove in generale (e' letteralmente cosa fa
-# orbit_around_table_node.py, in un ALTRO contesto -- la raccolta dataset).
+# IMPORTANTE: il tavolo e' fisso nel MONDO, non rispetto al robot -- che in
+# generale si muove (anche solo perche' l'utente lo guida col teleop prima
+# di lanciare questo nodo, da un punto qualsiasi -- non necessariamente
+# dallo spawn).
 #
-# TENTATIVI PRECEDENTI (tutti scartati):
+# TENTATIVI PRECEDENTI (tutti scartati -- storia per chi rivede questa
+# scelta in futuro):
 #   1. Coordinate mondo Gazebo usate direttamente come coordinate 'map',
-#      assumendo che 'map' nascesse coincidente con lo spawn -- sbagliato,
-#      verificato in RViz (il box finiva sotto al robot).
-#   2. 'map' letto via TF vera (corretto in linea di principio: non si
-#      assume piu' la convenzione) -- ma la stima di 'map' di slam_toolbox
-#      non e' assestata cosi' presto dopo l'avvio: la posa calcolata del
-#      tavolo e' variata da un run all'altro fino a 37cm rispetto al
-#      valore vero. Non un bug di formula, ma rumore nella stima SLAM che
-#      aspettare di piu' non elimina in modo affidabile.
-#   3. Ancorato a base_footprint (il robot non si muove IN QUESTO flusso
-#      specifico) -- risolve l'errore, ma smette di funzionare nel momento
-#      in cui la base viene mai comandata a muoversi, che e' un requisito
-#      reale del progetto, non un'ipotesi remota. Scartato.
-#   4. 'odom' invece di 'map' -- fisso nel mondo come 'map', disponibile da
-#      subito senza convergenza SLAM. Migliore, ma ancora impreciso: la
-#      posa calcolata del tavolo restava sballata (fino a 33cm), stavolta
-#      con un errore SISTEMATICO (sempre nella stessa direzione) -- indizio
-#      che il vero problema non era il frame, ma l'aver assunto che il
-#      robot spawni ESATTAMENTE alla posa nominale passata a
-#      robot_spawn.launch.py (evidentemente non vero con precisione
-#      sufficiente in questa simulazione).
+#      assumendo che 'map' nascesse coincidente con lo spawn -- sbagliato.
+#   2. 'map' letto via TF vera -- corretto in principio, ma la stima di
+#      slam_toolbox non e' assestata cosi' presto (errore fino a 37cm).
+#   3. Ancorato a base_footprint assumendo che il robot non si muova mai --
+#      falso: il robot viene spostato (teleop) PRIMA di lanciare il nodo.
+#   4. 'odom' invece di 'map' -- disponibile subito, ma l'errore restava
+#      (fino a 33cm, stavolta sistematico): il vero problema non era il
+#      frame, ma l'aver assunto la posa di spawn NOMINALE come riferimento,
+#      quando il robot puo' essere altrove per scelta dell'utente.
+#   5. Ground truth da un bridge Gazebo dedicato -- funzionava, ma
+#      complesso (nuovo bridge in un pacchetto PAL condiviso) per un
+#      problema che si risolve piu' semplicemente con dati che abbiamo gia'.
 #
-# SOLUZIONE: invece di fidarsi della posa di spawn NOMINALE, si legge la
-# posa VERA del robot nel mondo -- ground truth dalla fisica di Gazebo, via
-# un bridge dedicato (/gazebo_ground_truth_poses, aggiunto in
-# tiago_pro_gz_bridge.yaml, dal topic gz-sim /world/.../pose/info) -- non
-# e' una stima (SLAM, odometria), e' la posizione reale calcolata dal motore
-# fisico stesso, quindi non soggetta a nessuno degli errori visti sopra.
-# Il tavolo, essendo fisso ed essendo la sua posa nota per certo dal world
-# file, si posiziona rispetto al robot ricalcolando "dove sta il tavolo
-# rispetto a dove il robot REALMENTE si trova ORA" (non "rispetto a dove
-# avrebbe dovuto trovarsi allo spawn") -- poi si converte in TABLE_FRAME
-# (odom, fisso nel mondo) con la stessa TF vera di prima, per restare
-# valido anche quando la base si muove.
-TABLE_FRAME = 'odom'
-GAZEBO_ROBOT_MODEL_NAME = 'tiago_pro'  # tiago_pro_gazebo.launch.py: robot_name = 'tiago_pro'
+# SOLUZIONE: il robot rileva gia', in tempo reale e in base_footprint, la
+# posizione di coca/pringles/biscotti (vedi TRACKED_CLASSES) -- dati veri,
+# non stime, corretti via TF SOLO sulla catena cinematica del robot stesso
+# (camera -> base_footprint, sempre affidabile, nessuna localizzazione nel
+# mondo coinvolta). Le posizioni di QUEGLI STESSI oggetti nel mondo Gazebo
+# sono note per certo dal world file (KNOWN_OBJECT_WORLD_XY). Confrontando
+# "dove sono nel mondo" con "dove li vede il robot ORA", si ricostruisce
+# esattamente la trasformazione rigida (rotazione + traslazione) tra mondo
+# e base_footprint in QUESTO preciso momento -- e da li' la posizione del
+# tavolo (anch'essa nota nel mondo) direttamente in base_footprint. Nessuna
+# TF esterna, nessuna stima SLAM/odometria, nessun bridge: solo detection
+# vere gia' disponibili, con la stessa semplicita' con cui pringles/biscuits
+# diventano ostacoli.
+#
+# Serve pero' ALMENO 2 oggetti rilevati: un solo punto dice quanto e'
+# lontano il tavolo, ma non in che direzione (la rotazione del robot nel
+# mondo resta un'incognita con un solo riferimento) -- con 2+ punti la
+# trasformazione rigida e' univocamente determinata (problema di Procrustes
+# ortogonale standard). Se ne arriva meno di 2, il tavolo non viene aggiunto
+# (fallire in modo visibile, non con un ostacolo mal posizionato).
+TABLE_FRAME = 'base_footprint'
 
-# NIENTE fallback sulla posa di spawn nominale: il robot puo' essersi
-# spostato (teleop/navigazione) tra il lancio della simulazione e l'avvio
-# di questo nodo -- e' il workflow reale con cui viene usato, non
-# un'eccezione. Se il ground truth non arriva, il tavolo semplicemente non
-# viene aggiunto (vedi add_table_obstacle) -- niente stime di ripiego che
-# potrebbero essere pericolosamente sbagliate.
+# Posizioni vere nel mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world)
+# degli stessi oggetti che il robot rileva -- servono come "punti noti" per
+# ricostruire la trasformazione mondo -> base_footprint (vedi sopra).
+KNOWN_OBJECT_WORLD_XY = {
+    'coke can':      (5.0, 4.65),
+    'pringles can':  (5.25, 5.05),
+    'biscuits pack': (4.90, 4.95),
+}
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 
 
-def _world_xy_to_local_xy(world_xy, origin_xy, origin_yaw):
-    """Converte un punto del mondo in coordinate locali rispetto a una posa
-    (origin_xy, origin_yaw), anch'essa espressa nel mondo -- pura geometria,
-    stessa trasformazione che farebbe TF tra due frame in quella relazione."""
-    dx = world_xy[0] - origin_xy[0]
-    dy = world_xy[1] - origin_xy[1]
-    c, s = np.cos(origin_yaw), np.sin(origin_yaw)
-    return (dx * c + dy * s, -dx * s + dy * c)
+def _fit_rigid_transform_2d(world_points, local_points):
+    """
+    Dati >= 2 punti corrispondenti (stesso ordine) in due sistemi di
+    riferimento diversi ("mondo" e "locale"), ricava la rotazione + la
+    traslazione che meglio li allinea (minimi quadrati) -- problema di
+    Procrustes ortogonale standard, risolto via SVD. Restituisce (R 2x2,
+    t) tali che: local_point ~= R @ world_point + t.
+
+    Con esattamente 2 punti la soluzione e' esatta (nessun residuo); con
+    piu' punti (qui fino a 3: coca, pringles, biscotti) e' un fit ai
+    minimi quadrati, piu' robusto al rumore di detection dei singoli punti.
+    """
+    world = np.array(world_points)
+    local = np.array(local_points)
+    world_centroid = world.mean(axis=0)
+    local_centroid = local.mean(axis=0)
+    world_centered = world - world_centroid
+    local_centered = local - local_centroid
+
+    H = world_centered.T @ local_centered
+    U, _, Vt = np.linalg.svd(H)
+    rotation = Vt.T @ U.T
+    if np.linalg.det(rotation) < 0:  # evita una riflessione invece di una rotazione pura
+        Vt[-1, :] *= -1
+        rotation = Vt.T @ U.T
+
+    translation = local_centroid - rotation @ world_centroid
+    return rotation, translation
 
 
 # Geometria vera (pal_gazebo_worlds/models/table_0m8/table.sdf): piano
@@ -140,15 +158,11 @@ def _world_xy_to_local_xy(world_xy, origin_xy, origin_yaw):
 TABLE_SURFACE_TOP_Z = 0.815
 TABLE_FOOTPRINT_XY = (1.0, 0.8)
 
-# Margine di sicurezza: la stima di 'map' da parte di slam_toolbox non e'
-# ancora ben assestata quando la leggiamo (poco dopo l'avvio), e in pratica
-# la posa calcolata del tavolo e' variata anche di ~17cm da un run
-# all'altro rispetto al valore vero -- non un bug di calcolo (la formula e'
-# corretta, verificata piu' volte), ma rumore intrinseco della stima SLAM
-# che aspettare ancora non elimina in modo affidabile. Invece di rincorrere
-# una precisione che non abbiamo, il box viene reso volutamente piu' grande
-# del tavolo vero, cosi' l'incertezza osservata resta comunque coperta.
-TABLE_SAFETY_MARGIN = 0.4  # metri, aggiunti a ciascuna dimensione orizzontale
+# Margine di sicurezza (piu' piccolo di quello usato nei tentativi con
+# 'map'/'odom': qui la posizione viene dalla detection reale + geometria
+# rigida esatta, non da una stima SLAM/odometrica rumorosa -- resta solo
+# per il rumore normale della detection stessa, pochi cm, non decine).
+TABLE_SAFETY_MARGIN = 0.15  # metri, aggiunti a ciascuna dimensione orizzontale
 TABLE_FOOTPRINT_XY_WITH_MARGIN = (
     TABLE_FOOTPRINT_XY[0] + TABLE_SAFETY_MARGIN,
     TABLE_FOOTPRINT_XY[1] + TABLE_SAFETY_MARGIN,
@@ -183,18 +197,6 @@ class MoveGroupClient(Node):
         # protegge comunque da un singolo messaggio perso per un motivo
         # qualsiasi (RViz non ancora avviato, aperto dopo, ecc.).
         self.create_timer(1.0, self._republish_obstacle_markers)
-
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-
-        # Pose VERE (ground truth, dalla fisica) di ogni entita' del mondo
-        # -- vedi GAZEBO_ROBOT_MODEL_NAME e il bridge dedicato in
-        # tiago_pro_gz_bridge.yaml. Chiave: child_frame_id (nome
-        # dell'entita' in Gazebo), valore: l'ultimo TransformStamped.
-        self.latest_ground_truth_poses = {}
-        self.create_subscription(
-            TFMessage, '/gazebo_ground_truth_poses', self._ground_truth_callback, 10
-        )
 
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
         # La coca (topic single-object) e' il target; pringles/biscuits
@@ -239,100 +241,54 @@ class MoveGroupClient(Node):
             throttle_duration_sec=2.0,
         )
 
-    def _ground_truth_callback(self, msg: TFMessage):
-        for transform in msg.transforms:
-            self.latest_ground_truth_poses[transform.child_frame_id] = transform
-
     def add_table_obstacle(self, frame_id=TABLE_FRAME,
                             dimensions=(*TABLE_FOOTPRINT_XY_WITH_MARGIN, TABLE_SURFACE_TOP_Z)):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
-        ancorato a TABLE_FRAME = 'odom' -- fisso nel mondo (valido anche se
-        il robot si muove dopo), ma a differenza di 'map' disponibile da
-        subito, senza aspettare una convergenza SLAM (vedi commento sopra
-        le costanti TABLE_*).
+        ancorato a TABLE_FRAME = 'base_footprint'. Valido per la durata di
+        QUESTA operazione (il braccio si muove, la base no, mentre questo
+        nodo gira) -- se il robot viene spostato, va rilanciato il nodo,
+        cosi' si ricalcola da dove si trova ora (vedi commento sopra le
+        costanti TABLE_*).
 
-        La posizione del tavolo rispetto al robot viene ricalcolata ORA,
-        dalla posa VERA del robot nel mondo (ground truth Gazebo, vedi
-        GAZEBO_ROBOT_MODEL_NAME) -- non dalla posa di spawn nominale
-        (imprecisa, e comunque non piu' valida non appena il robot si
-        sposta, cosa che puo' succedere prima ancora di lanciare questo
-        nodo). Se il ground truth non arriva in tempo (bridge non
-        disponibile), il tavolo NON viene aggiunto -- niente stima di
-        ripiego potenzialmente pericolosa. Il risultato va comunque
-        convertito in TABLE_FRAME: si
-        legge la TF vera base_footprint -> TABLE_FRAME (non si assume
-        nessuna convenzione).
+        La posizione si ricostruisce confrontando dove il robot vede ORA
+        (in base_footprint) gli oggetti tracciati con dove quegli stessi
+        oggetti si trovano per certo nel mondo Gazebo -- niente TF esterna,
+        niente stima SLAM/odometrica, niente bridge: solo detection vere
+        gia' disponibili (vedi _fit_rigid_transform_2d).
         """
-        ground_truth = None
-        deadline_gt = time.time() + real_seconds_for(10.0)
-        while ground_truth is None and time.time() < deadline_gt:
-            ground_truth = self.latest_ground_truth_poses.get(GAZEBO_ROBOT_MODEL_NAME)
-            if ground_truth is None:
-                rclpy.spin_once(self, timeout_sec=0.2)
-                time.sleep(0.2)
+        world_points = []
+        local_points = []
+        for class_name, world_xy in KNOWN_OBJECT_WORLD_XY.items():
+            center = self.latest_centers_all.get(class_name)
+            if center is None:
+                continue
+            world_points.append(world_xy)
+            local_points.append((center.point.x, center.point.y))
 
-        if ground_truth is None:
-            # NIENTE fallback sulla posa di spawn nominale: il robot puo'
-            # essersi spostato (teleop/navigazione) tra il lancio della
-            # simulazione e l'avvio di questo nodo -- e' letteralmente il
-            # workflow reale con cui viene usato. Usare la posa di spawn a
-            # quel punto sarebbe peggio che non aggiungere l'ostacolo: un
-            # box posizionato con falsa sicurezza in un punto qualsiasi,
-            # invece di sapere semplicemente che non c'e'. Meglio fallire
-            # in modo visibile (nessun ostacolo, lo si vede subito) che in
-            # modo silenzioso e pericoloso (ostacolo nel posto sbagliato).
+        if len(world_points) < 2:
             self.get_logger().error(
-                f"Ground truth per '{GAZEBO_ROBOT_MODEL_NAME}' non arrivato "
-                f"(bridge /gazebo_ground_truth_poses non disponibile?) -- "
-                f"tavolo NON aggiunto come ostacolo."
+                f"Solo {len(world_points)} oggetto/i tracciato/i rilevato/i "
+                f"(servono almeno 2 per ricostruire posizione E rotazione del "
+                f"mondo rispetto al robot) -- tavolo NON aggiunto come ostacolo."
             )
             return
 
-        t = ground_truth.transform.translation
-        q = ground_truth.transform.rotation
-        robot_world_xy = (t.x, t.y)
-        robot_world_yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')[2]
+        rotation, translation = _fit_rigid_transform_2d(world_points, local_points)
+        table_xy = rotation @ np.array(TABLE_WORLD_POSITION_XY) + translation
+        table_yaw = np.arctan2(rotation[1, 0], rotation[0, 0])
         self.get_logger().info(
-            f"Ground truth robot: x={t.x:.3f} y={t.y:.3f} yaw={robot_world_yaw:.3f} rad "
-            f"(entita' '{GAZEBO_ROBOT_MODEL_NAME}')."
+            f"Tavolo ricostruito da {len(world_points)} oggetti tracciati "
+            f"({', '.join(c for c in KNOWN_OBJECT_WORLD_XY if self.latest_centers_all.get(c) is not None)}): "
+            f"x={table_xy[0]:.3f} y={table_xy[1]:.3f} yaw={table_yaw:.3f} rad."
         )
 
-        table_position_base_footprint_now = _world_xy_to_local_xy(
-            TABLE_WORLD_POSITION_XY, robot_world_xy, robot_world_yaw
-        )
-        table_orientation_quat_now = R.from_euler('z', -robot_world_yaw).as_quat()
-
-        table_in_base_footprint = Pose()
-        table_in_base_footprint.position.x = table_position_base_footprint_now[0]
-        table_in_base_footprint.position.y = table_position_base_footprint_now[1]
-        table_in_base_footprint.position.z = TABLE_SURFACE_TOP_Z / 2.0
-        (table_in_base_footprint.orientation.x, table_in_base_footprint.orientation.y,
-         table_in_base_footprint.orientation.z, table_in_base_footprint.orientation.w
-         ) = table_orientation_quat_now
-
-        transform = None
-        deadline = time.time() + real_seconds_for(10.0)
-        while transform is None and time.time() < deadline:
-            try:
-                transform = self.tf_buffer.lookup_transform(
-                    frame_id, "base_footprint", rclpy.time.Time()
-                )
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
-                    tf2_ros.ExtrapolationException) as error:
-                self.get_logger().warn(
-                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}",
-                    throttle_duration_sec=2.0,
-                )
-                rclpy.spin_once(self, timeout_sec=0.2)
-                time.sleep(0.3)
-        if transform is None:
-            self.get_logger().error(
-                f"TF {frame_id} <- base_footprint mai arrivata: tavolo NON aggiunto come ostacolo."
-            )
-            return
-
-        pose_in_frame = do_transform_pose(table_in_base_footprint, transform)
+        pose = Pose()
+        pose.position.x = float(table_xy[0])
+        pose.position.y = float(table_xy[1])
+        pose.position.z = TABLE_SURFACE_TOP_Z / 2.0
+        (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w
+         ) = R.from_euler('z', table_yaw).as_quat()
 
         obj = CollisionObject()
         obj.header.frame_id = frame_id
@@ -343,7 +299,7 @@ class MoveGroupClient(Node):
         primitive.dimensions = list(dimensions)
 
         obj.primitives.append(primitive)
-        obj.primitive_poses.append(pose_in_frame)
+        obj.primitive_poses.append(pose)
         obj.operation = CollisionObject.ADD
 
         scene = PlanningScene()
@@ -356,8 +312,8 @@ class MoveGroupClient(Node):
 
         self.get_logger().info(
             f"Tavolo aggiunto in {frame_id} a "
-            f"x={pose_in_frame.position.x:.3f} y={pose_in_frame.position.y:.3f} "
-            f"z={pose_in_frame.position.z:.3f} (CollisionObject + marker debug pubblicati)."
+            f"x={pose.position.x:.3f} y={pose.position.y:.3f} "
+            f"z={pose.position.z:.3f} (CollisionObject + marker debug pubblicati)."
         )
 
         # Marker separato, SOLO per debug visivo: la PlanningScene di RViz
@@ -373,7 +329,7 @@ class MoveGroupClient(Node):
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose = pose_in_frame
+        marker.pose = pose
         marker.scale.x, marker.scale.y, marker.scale.z = dimensions
         marker.color.r = 1.0
         marker.color.g = 0.5
@@ -749,9 +705,10 @@ def main():
               f"a x={center.point.x:.3f} y={center.point.y:.3f} z={center.point.z:.3f}")
         node.add_object_obstacle(topic_slug(class_name), center, radius, height)
 
-    # --- Ostacolo: tavolo (noto a priori, non dalla detection -- vedi TABLE_*) ---
+    # --- Ostacolo: tavolo (posa nota nel mondo, non dalla detection diretta
+    # -- ricostruita in base_footprint dagli oggetti tracciati, vedi TABLE_*) ---
     print(f"Aggiungo ostacolo 'table' in {TABLE_FRAME} "
-          f"(posa nota rispetto al robot, convertita via TF vera)...")
+          f"(ricostruito dagli oggetti tracciati)...")
     node.add_table_obstacle()
 
     # Niente marker per il centro della lattina qui: lo pubblica gia'
