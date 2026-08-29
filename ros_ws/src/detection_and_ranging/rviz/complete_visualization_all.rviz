@@ -597,17 +597,6 @@ Visualization Manager:
       Reliability Policy: Reliable
       Value: /centers_all/biscuits_pack_axis
     Value: true
-  - Class: rviz_default_plugins/Marker
-    Enabled: true
-    Name: Dinner table - asse centro
-    Namespaces: {}
-    Topic:
-      Depth: 5
-      Durability Policy: Volatile
-      History Policy: Keep Last
-      Reliability Policy: Reliable
-      Value: /centers_all/dinner_table_axis
-    Value: true
   - Alpha: 1
     Class: rviz_default_plugins/PointStamped
     Color: 0; 255; 255
@@ -652,21 +641,6 @@ Visualization Manager:
       History Policy: Keep Last
       Reliability Policy: Reliable
       Value: /centers_all/biscuits_pack_center
-    Value: false
-  - Alpha: 1
-    Class: rviz_default_plugins/PointStamped
-    Color: 0; 255; 255
-    Enabled: false
-    History Length: 1
-    Name: Dinner table - centro
-    Radius: 0.02
-    Topic:
-      Depth: 5
-      Durability Policy: Volatile
-      Filter size: 10
-      History Policy: Keep Last
-      Reliability Policy: Reliable
-      Value: /centers_all/dinner_table_center
     Value: false
   - Class: rviz_default_plugins/MarkerArray
     Enabled: true

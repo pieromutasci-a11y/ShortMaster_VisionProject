@@ -76,19 +76,22 @@ from tf2_geometry_msgs import do_transform_point
 # Raggio noto per classe (prior sull'oggetto), in metri.
 #
 # ATTENZIONE: questa correzione modella un CILINDRO. Vale in pieno per le due
-# lattine; per le altre due classi il valore e' una scelta consapevole:
-#   - 'biscuits pack' e' una SCATOLA: mezzo spessore come raggio equivalente e'
-#     un'approssimazione valida solo se la faccia inquadrata e' grossomodo
-#     frontale alla camera, e peggiora man mano che la si guarda di sbieco.
-#   - 'dinner table' non ha un "asse" con senso fisico: raggio 0.0, cioe'
-#     nessuna correzione. Il centro pubblicato coincide col punto di
-#     superficie -- il topic esiste ed e' utilizzabile come ingombro, ma non
-#     inventiamo uno spostamento che non avrebbe significato.
+# lattine; per 'biscuits pack' (una SCATOLA) il valore e' una scelta
+# consapevole: mezzo spessore come raggio equivalente e' un'approssimazione
+# valida solo se la faccia inquadrata e' grossomodo frontale alla camera, e
+# peggiora man mano che la si guarda di sbieco.
+#
+# 'dinner table' non e' qui: non ha un "asse" con senso fisico, e il tavolo
+# e' comunque noto A PRIORI in pose_optimizer (non dalla detection -- vedi
+# TABLE_* in optimizer.py), quindi centro/asse per questa classe non
+# servirebbero a nessuno -- pubblicarli sarebbe puro rumore in RViz. Il
+# rilevamento YOLO grezzo (yolo_all/dinner_table_position, bounding box
+# nell'immagine annotata) resta comunque attivo in
+# rt_object_detection_node_all.py, solo non viene piu' elaborato qui.
 RADIUS_BY_CLASS = {
     'coke can':      0.04,   # valore del nodo single-object, gia' verificato in simulazione
     'pringles can':  0.04,   # da tarare sul modello Gazebo effettivo
     'biscuits pack': 0.03,   # mezzo spessore (approssimazione, vedi sopra)
-    'dinner table':  0.0,    # nessuna correzione (vedi sopra)
 }
 
 # Colore dell'asse per classe (r, g, b in 0..1), cosi' a colpo d'occhio si
@@ -100,7 +103,6 @@ COLOR_BY_CLASS = {
     'coke can':      (0.80, 0.16, 0.80),   # magenta
     'pringles can':  (0.16, 0.50, 0.80),   # blu
     'biscuits pack': (1.00, 0.67, 0.00),   # arancione
-    'dinner table':  (0.47, 0.47, 0.47),   # grigio
 }
 DEFAULT_AXIS_COLOR = (0.0, 1.0, 0.0)   # verde, per una classe senza colore assegnato
 

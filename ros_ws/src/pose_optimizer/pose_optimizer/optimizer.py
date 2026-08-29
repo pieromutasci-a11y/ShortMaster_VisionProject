@@ -24,8 +24,11 @@ import numpy as np
 COKE_CENTER_TOPIC = 'cokecan_center_base_footprint'
 
 # Pipeline multi-oggetto: un topic per classe (stesso schema di nomi di
-# center_computation_all.py -- vedi topic_slug() li').
-TRACKED_CLASSES = ['coke can', 'pringles can', 'biscuits pack', 'dinner table']
+# center_computation_all.py -- vedi topic_slug() li'). 'dinner table' non
+# c'e': center_computation_all.py non pubblica piu' un centro/asse per il
+# tavolo (noto a priori, vedi TABLE_* piu' sotto -- centro/asse non
+# servirebbero a nulla qui e sarebbero solo rumore).
+TRACKED_CLASSES = ['coke can', 'pringles can', 'biscuits pack']
 
 # Classi trattate come OSTACOLI (non target) nella scena di grasping. Il
 # tavolo (dinner table) e' un discorso a parte, non e' qui.
@@ -53,17 +56,58 @@ OBSTACLE_DIMENSIONS = {
 # braccio in ogni momento, qualunque sia la posizione del robot.
 TABLE_FRAME = 'map'
 
+# --- ATTENZIONE: 'map' qui NON e' il frame del mondo Gazebo ---
+# La simulazione parte con slam:=True (slam_toolbox, live): il frame 'map'
+# che ne risulta nasce coincidente con 'odom'/base_footprint nell'istante in
+# cui il robot e' spawnato -- origine e orientamento sono quelli della POSA
+# DI SPAWN del robot, non quelli del mondo Gazebo. Usare direttamente le
+# coordinate del world file (frame Gazebo) come se fossero coordinate 'map'
+# e' un bug via -- il box finisce nel punto sbagliato rispetto al robot, e
+# MoveIt pianifica come se il tavolo non ci fosse li' (causa quasi certa
+# dell'urto reale col tavolo).
+#
+# Posa di spawn del robot nel mondo Gazebo (tiago_pro_gazebo/launch/
+# robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57").
+ROBOT_SPAWN_WORLD_XY = (5.0, 3.5)
+ROBOT_SPAWN_WORLD_YAW = 1.57
+
 # Posa vera del tavolo nel mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world,
 # modello s3_table, nessuna rotazione).
-TABLE_POSITION_XY = (5.0, 5.0)
+TABLE_WORLD_POSITION_XY = (5.0, 5.0)
+
+
+def _world_xy_to_map_xy(world_xy, robot_spawn_xy=ROBOT_SPAWN_WORLD_XY,
+                         robot_spawn_yaw=ROBOT_SPAWN_WORLD_YAW):
+    """
+    'map' e' il frame Gazebo ruotato/traslato: origine sulla posa di spawn
+    del robot, asse x nella direzione in cui il robot guardava in quel
+    momento. Quindi un punto fisso del mondo si converte in 'map' con
+    un'unica rotazione rigida (traslazione all'origine di spawn, poi
+    rotazione di -yaw di spawn) -- stessa trasformazione, in forma chiusa,
+    di quella che farebbe TF tra i due frame in quell'istante.
+    """
+    dx = world_xy[0] - robot_spawn_xy[0]
+    dy = world_xy[1] - robot_spawn_xy[1]
+    c, s = np.cos(robot_spawn_yaw), np.sin(robot_spawn_yaw)
+    return (dx * c + dy * s, -dx * s + dy * c)
+
+
+# Tavolo espresso in 'map' (vedi sopra) -- circa (1.5, 0.0): il robot
+# spawna gia' rivolto verso il tavolo, quindi il tavolo finisce quasi
+# esattamente davanti a lui lungo l'asse x di 'map'.
+TABLE_POSITION_XY = _world_xy_to_map_xy(TABLE_WORLD_POSITION_XY)
+
+# Il box va anche ruotato della stessa rotazione (il tavolo non e' ruotato
+# nel mondo, ma 'map' si', quindi visto da 'map' lo e'): -yaw di spawn.
+TABLE_ORIENTATION_QUAT = R.from_euler('z', -ROBOT_SPAWN_WORLD_YAW).as_quat()  # (x, y, z, w)
 
 # Geometria vera (pal_gazebo_worlds/models/table_0m8/table.sdf): piano
 # 1.0 x 0.8 x 0.03 a z locale 0.8 -> superficie a z=0.815 (coerente col resto
-# del progetto, es. CENTER_Z in orbit_around_table_node.py). Le 4 gambe
-# sottili (cilindri r=0.02) non sono modellate qui: un unico box pieno da
-# terra alla superficie e' piu' semplice e comunque MAI meno sicuro della
-# realta' (il gruppo di planning e' solo il braccio, non la base -- non
-# serve che passi "tra le gambe").
+# del progetto, es. CENTER_Z in orbit_around_table_node.py). La rotazione in Z
+# non cambia la quota. Le 4 gambe sottili (cilindri r=0.02) non sono
+# modellate qui: un unico box pieno da terra alla superficie e' piu' semplice
+# e comunque MAI meno sicuro della realta' (il gruppo di planning e' solo il
+# braccio, non la base -- non serve che passi "tra le gambe").
 TABLE_SURFACE_TOP_Z = 0.815
 TABLE_FOOTPRINT_XY = (1.0, 0.8)
 
@@ -127,11 +171,14 @@ class MoveGroupClient(Node):
 
     def add_table_obstacle(self, frame_id=TABLE_FRAME,
                             position=(*TABLE_POSITION_XY, TABLE_SURFACE_TOP_Z / 2.0),
-                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z)):
+                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z),
+                            orientation=TABLE_ORIENTATION_QUAT):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
         ancorato a TABLE_FRAME (fisso nel mondo, non in base_footprint -- vedi
-        commento sopra le costanti TABLE_*).
+        commento sopra le costanti TABLE_*). Posizione E orientamento sono
+        gia' convertiti da coordinate mondo Gazebo a coordinate 'map' (vedi
+        _world_xy_to_map_xy) -- 'map' non coincide col mondo Gazebo.
         """
         obj = CollisionObject()
         obj.header.frame_id = frame_id
@@ -143,7 +190,7 @@ class MoveGroupClient(Node):
 
         pose = Pose()
         pose.position.x, pose.position.y, pose.position.z = position
-        pose.orientation.w = 1.0
+        pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = orientation
 
         obj.primitives.append(primitive)
         obj.primitive_poses.append(pose)
