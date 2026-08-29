@@ -61,6 +61,19 @@ OBSTACLE_DIMENSIONS = {
     'biscuits pack': (0.029, 0.15),
 }
 
+# La coca stessa (il target) NON e' mai stata un ostacolo per MoveIt --
+# nessun CollisionObject la rappresenta, quindi il collision-checking non
+# sa che esiste fisicamente. In pratica il braccio raggiunge il target
+# (un punto/orientamento) senza nessuna verifica che le dita (aperte, il
+# gripper non si chiude mai in questo progetto) non la tocchino/spingano
+# per arrivarci -- ed e' esattamente quello che succede. Aggiungerla come
+# ostacolo vero (stessa funzione usata per pringles/biscuits, NESSUNA
+# eccezione per le dita: e' proprio il contatto delle dita il problema,
+# esentarle sarebbe stato il contrario di quello che serve) costringe
+# MoveIt a scartare i candidati che la toccherebbero davvero, invece di
+# limitarsi a puntare al centro senza sapere cosa c'e' li'.
+COKE_DIMENSIONS = (0.04, 0.15)  # raggio, altezza -- vero, da s3_cocacola/model.sdf
+
 # --- Tavolo: nota a priori, non dalla detection (difficile da ricostruire
 # dalla camera -- bordi larghi, gambe sottili, poca texture) ---
 #
@@ -709,6 +722,16 @@ def main():
     coke_center = node.latest_centers_all['coke can']
     posizione_target = (coke_center.point.x, coke_center.point.y, coke_center.point.z)
     print(f"Target (coca): x={posizione_target[0]:.3f} y={posizione_target[1]:.3f} z={posizione_target[2]:.3f}")
+
+    # --- Ostacolo: la coca stessa (il target) -- vedi commento su
+    # COKE_DIMENSIONS: senza questo il braccio puntava al centro senza
+    # nessuna verifica che le dita non la toccassero/spingessero per
+    # arrivarci. Nessuna eccezione per il gripper: e' proprio il contatto
+    # da evitare.
+    coke_radius, coke_height = COKE_DIMENSIONS
+    print(f"Aggiungo ostacolo 'coke can' (il target stesso, r={coke_radius}, h={coke_height}) "
+          f"a x={coke_center.point.x:.3f} y={coke_center.point.y:.3f} z={coke_center.point.z:.3f}")
+    node.add_object_obstacle('coke', coke_center, coke_radius, coke_height)
 
     # --- Ostacoli: pringles e biscotti, se rilevati ---
     # Stesso meccanismo usato sopra per la coca (wait_for_topics): parte
