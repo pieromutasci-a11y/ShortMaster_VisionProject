@@ -11,7 +11,7 @@ from moveit_msgs.msg import (
 from geometry_msgs.msg import PoseStamped, Pose, PointStamped
 from shape_msgs.msg import SolidPrimitive
 from sensor_msgs.msg import JointState
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
@@ -81,6 +81,9 @@ class MoveGroupClient(Node):
         self._joint_pub = self.create_publisher(JointState, '/joint_states', 10)
         self._scene_pub = self.create_publisher(PlanningScene, '/planning_scene', 10)
         self._marker_pub = self.create_publisher(Marker, '/target_marker', 10)
+        self._candidates_marker_pub = self.create_publisher(
+            MarkerArray, '/grasp_candidates_marker', 10
+        )
 
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
         # La coca (topic single-object) e' il target; pringles/biscuits
@@ -225,6 +228,47 @@ class MoveGroupClient(Node):
             self._marker_pub.publish(m)
             rclpy.spin_once(self, timeout_sec=0.3)
 
+    def publish_candidates_markers(self, candidati, frame_id="base_footprint"):
+        """
+        Disegna TUTTI i punti della circonferenza di presa in un colpo solo
+        (a differenza di publish_target_marker, che pubblica un singolo
+        marker sovrascritto ad ogni chiamata -- qui ogni candidato ha un suo
+        id, quindi restano visibili tutti insieme).
+
+        candidati: lista di dict {x, y, z, stato}, stato in
+        {'in_attesa', 'ok', 'fallito', 'migliore'}.
+        """
+        colori = {
+            'in_attesa': (0.6, 0.6, 0.6, 0.6),  # grigio: non ancora provato
+            'ok':        (0.0, 1.0, 0.0, 0.8),  # verde: IK riuscita, no collisioni
+            'fallito':   (1.0, 0.0, 0.0, 0.8),  # rosso: IK fallita o collisione
+            'migliore':  (1.0, 0.84, 0.0, 1.0),  # oro: il candidato scelto
+        }
+        array = MarkerArray()
+        stamp = self.get_clock().now().to_msg()
+        for i, c in enumerate(candidati):
+            m = Marker()
+            m.header.frame_id = frame_id
+            m.header.stamp = stamp
+            m.ns = "grasp_candidates"
+            m.id = i
+            m.type = Marker.SPHERE
+            m.action = Marker.ADD
+            m.pose.position.x = c['x']
+            m.pose.position.y = c['y']
+            m.pose.position.z = c['z']
+            m.pose.orientation.w = 1.0
+            is_migliore = c['stato'] == 'migliore'
+            scala = 0.035 if is_migliore else 0.02
+            m.scale.x = m.scale.y = m.scale.z = scala
+            r, g, b, a = colori[c['stato']]
+            m.color.r, m.color.g, m.color.b, m.color.a = r, g, b, a
+            array.markers.append(m)
+
+        for _ in range(5):
+            self._candidates_marker_pub.publish(array)
+            rclpy.spin_once(self, timeout_sec=0.2)
+
     def send_goal(self, target_pose: PoseStamped, group_name="arm_left",
                   link_name="gripper_left_grasping_link", start_positions=None,
                   plan_only=True):
@@ -368,13 +412,21 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     """
     migliore = None
     migliore_costo = -5
+    migliore_indice = None
 
-    for i in range(n_campioni):
-        yaw = 2 * np.pi * i / n_campioni
+    # Punti della circonferenza calcolati tutti in anticipo (stesso raggio,
+    # posizione, yaw campionati uniformemente) cosi' da poterli disegnare
+    # subito tutti insieme in RViz, prima ancora di provare l'IK su ognuno.
+    yaws = [2 * np.pi * i / n_campioni for i in range(n_campioni)]
+    targets = [costruisci_target(position, yaw, raggio) for yaw in yaws]
+    candidati = [
+        {'x': t.pose.position.x, 'y': t.pose.position.y, 'z': t.pose.position.z,
+         'stato': 'in_attesa'}
+        for t in targets
+    ]
+    node.publish_candidates_markers(candidati)
 
-        target = costruisci_target(position, yaw, raggio)
-        pubblica_marker_target(node, (target.pose.position.x, target.pose.position.y, target.pose.position.z))
-
+    for i, (yaw, target) in enumerate(zip(yaws, targets)):
         result = node.send_goal(target, start_positions=None, plan_only=True)
 
         if result and result.result.error_code.val == 1:
@@ -390,11 +442,22 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
                         list(positions) + [0.0]
                     )
 
+            candidati[i]['stato'] = 'ok'
+
             if costo > migliore_costo:
                 migliore_costo = costo
                 migliore = (yaw, traj.joint_names, positions)
+                migliore_indice = i
         else:
             print(f"yaw={yaw:.2f} rad -> fallito")
+            candidati[i]['stato'] = 'fallito'
+
+        # Aggiorna i colori via via che ogni candidato viene valutato.
+        node.publish_candidates_markers(candidati)
+
+    if migliore_indice is not None:
+        candidati[migliore_indice]['stato'] = 'migliore'
+        node.publish_candidates_markers(candidati)
 
     return migliore
     
@@ -506,17 +569,6 @@ def main():
         print("Nessuna soluzione trovata per nessun valore di yaw.")
 
     rclpy.shutdown()
-
-
-def pubblica_marker_target(node, posizione_target):
-    target_marker = PoseStamped()
-    target_marker.header.frame_id = "base_footprint"
-    target_marker.pose.position.x = posizione_target[0]
-    target_marker.pose.position.y = posizione_target[1]
-    target_marker.pose.position.z = posizione_target[2]
-    target_marker.pose.orientation.w = 1.0
-    print("Pubblico marker del target...")
-    node.publish_target_marker(target_marker)    
 
 
     
