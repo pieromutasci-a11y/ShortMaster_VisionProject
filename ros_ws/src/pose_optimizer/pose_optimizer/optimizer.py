@@ -19,6 +19,24 @@ import tf2_geometry_msgs  # noqa: F401  (registra il supporto a PoseStamped per 
 from tf2_geometry_msgs import do_transform_pose
 
 
+# Real Time Factor osservato della simulazione in questa macchina: gira a
+# circa 0.4x rispetto al tempo reale (CPU quasi satura, YOLO su CPU pesa
+# parecchio) -- un secondo di QUESTO OROLOGIO (wall-clock, quello con cui
+# lavorano i nostri timeout/deadline in Python) corrisponde a solo ~0.4
+# secondi di tempo simulato/ROS, che e' quello con cui sono timestampati i
+# dati che aspettiamo (TF, detection). Tutte le attese sotto sono espresse
+# in secondi di tempo simulato "voluto" e convertite in secondi reali da
+# aspettare per davvero -- altrimenti si rischia di arrendersi mentre, dal
+# punto di vista della simulazione, e' passato solo un attimo.
+SIM_REAL_TIME_FACTOR = 0.4
+
+
+def real_seconds_for(sim_seconds):
+    """Secondi di OROLOGIO REALE da aspettare per lasciar passare
+    'sim_seconds' di tempo simulato, dato SIM_REAL_TIME_FACTOR."""
+    return sim_seconds / SIM_REAL_TIME_FACTOR
+
+
 # Topic del centro dell'oggetto (gia' in base_footprint, pubblicato da
 # detection_and_ranging -- vedi center_computation.py/center_computation_all.py).
 # Nessuna trasformazione TF necessaria qui: e' il frame in cui lavora gia'
@@ -219,7 +237,12 @@ class MoveGroupClient(Node):
         # trasformazione risulta da una catena a due salti, map->odom e
         # odom->base_footprint, pubblicati a frequenze diverse: capita che
         # il "tempo comune piu' recente" richiesto non sia ancora nel
-        # buffer di uno dei due). Finestra larga apposta (fino a 30s).
+        # buffer di uno dei due). Finestra larga apposta -- e va convertita
+        # con SIM_REAL_TIME_FACTOR (real time factor osservato ~0.4x):
+        # 'map' aggiorna col ritmo del tempo SIMULATO, quindi anche 30
+        # secondi di orologio reale possono valere solo ~12 secondi di
+        # simulazione, spesso non abbastanza perche' map->odom pubblichi un
+        # nuovo campione.
         #
         # IMPORTANTE: rclpy.spin_once(timeout_sec=...) NON garantisce di
         # aspettare per davvero quella durata -- ritorna prima se c'e' gia'
@@ -228,7 +251,7 @@ class MoveGroupClient(Node):
         # far passare tempo reale perche' TF si aggiorni. Serve anche un
         # time.sleep esplicito.
         transform = None
-        deadline = time.time() + 30.0
+        deadline = time.time() + real_seconds_for(30.0)
         while transform is None and time.time() < deadline:
             try:
                 transform = self.tf_buffer.lookup_transform(
@@ -604,7 +627,8 @@ def main():
     # se non giri quello stack, restava in attesa di un topic mai pubblicato.
     print("Aspetto la detection della coca su centers_all/coke_can_center_base_footprint...")
     if not node.wait_for_topics(
-        [lambda n: n.latest_centers_all.get('coke can')], timeout_sec=15.0
+        [lambda n: n.latest_centers_all.get('coke can')],
+        timeout_sec=real_seconds_for(15.0),
     ):
         print("Nessuna detection della coca ricevuta in tempo, esco.")
         node.destroy_node()
@@ -623,7 +647,7 @@ def main():
     # sapra' di doverlo evitare), non una pausa fissa da rispettare sempre.
     node.wait_for_topics(
         [lambda n, c=c: n.latest_centers_all.get(c) for c in OBSTACLE_CLASSES],
-        timeout_sec=8.0,
+        timeout_sec=real_seconds_for(8.0),
     )
 
     for class_name in OBSTACLE_CLASSES:
