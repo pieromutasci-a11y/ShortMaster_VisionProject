@@ -665,9 +665,9 @@ Visualization Manager:
       Value: /table_obstacle_debug_marker
     Value: true
   - Class: moveit_rviz_plugin/PlanningScene
-    Enabled: true
+    Enabled: false
     Move Group Namespace: ''
-    Name: PlanningScene (ostacoli MoveIt)
+    Name: PlanningScene (ostacoli MoveIt, include l'octomap del pavimento -- spento di default, rumoroso)
     Planning Scene Topic: /monitored_planning_scene
     Robot Description: robot_description
     Scene Geometry:
