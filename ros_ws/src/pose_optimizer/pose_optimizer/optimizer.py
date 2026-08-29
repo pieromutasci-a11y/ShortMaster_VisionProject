@@ -135,6 +135,9 @@ class MoveGroupClient(Node):
         self._candidates_marker_pub = self.create_publisher(
             MarkerArray, '/grasp_candidates_marker', 10
         )
+        self._table_marker_pub = self.create_publisher(
+            Marker, '/table_obstacle_debug_marker', 10
+        )
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
@@ -255,6 +258,31 @@ class MoveGroupClient(Node):
 
         for _ in range(5):
             self._scene_pub.publish(scene)
+            rclpy.spin_once(self, timeout_sec=0.3)
+
+        # Marker separato, SOLO per debug visivo: la PlanningScene di RViz
+        # mischia il nostro CollisionObject con l'Octomap della percezione
+        # (voxel dalla depth camera, spesso enorme -- es. il pavimento
+        # intero) nello stesso colore, rendendo impossibile distinguerli a
+        # vista. Questo marker disegna ESATTAMENTE la stessa posa/dimensioni
+        # appena pubblicate come CollisionObject, ma su un topic tutto
+        # nostro -- quello che vedi qui e' inequivocabilmente il nostro box,
+        # nient'altro.
+        marker = Marker()
+        marker.header.frame_id = frame_id
+        marker.ns = "table_obstacle_debug"
+        marker.id = 0
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.pose = pose_in_frame
+        marker.scale.x, marker.scale.y, marker.scale.z = dimensions
+        marker.color.r = 1.0
+        marker.color.g = 0.5
+        marker.color.b = 0.0
+        marker.color.a = 0.5
+        for _ in range(5):
+            marker.header.stamp = self.get_clock().now().to_msg()
+            self._table_marker_pub.publish(marker)
             rclpy.spin_once(self, timeout_sec=0.3)
 
     def wait_for_topics(self, attribute_getters, timeout_sec=10.0):
