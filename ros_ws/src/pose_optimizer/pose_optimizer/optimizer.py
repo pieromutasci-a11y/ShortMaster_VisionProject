@@ -139,6 +139,20 @@ TABLE_ORIENTATION_QUAT_AT_SPAWN = R.from_euler(
 TABLE_SURFACE_TOP_Z = 0.815
 TABLE_FOOTPRINT_XY = (1.0, 0.8)
 
+# Margine di sicurezza: la stima di 'map' da parte di slam_toolbox non e'
+# ancora ben assestata quando la leggiamo (poco dopo l'avvio), e in pratica
+# la posa calcolata del tavolo e' variata anche di ~17cm da un run
+# all'altro rispetto al valore vero -- non un bug di calcolo (la formula e'
+# corretta, verificata piu' volte), ma rumore intrinseco della stima SLAM
+# che aspettare ancora non elimina in modo affidabile. Invece di rincorrere
+# una precisione che non abbiamo, il box viene reso volutamente piu' grande
+# del tavolo vero, cosi' l'incertezza osservata resta comunque coperta.
+TABLE_SAFETY_MARGIN = 0.4  # metri, aggiunti a ciascuna dimensione orizzontale
+TABLE_FOOTPRINT_XY_WITH_MARGIN = (
+    TABLE_FOOTPRINT_XY[0] + TABLE_SAFETY_MARGIN,
+    TABLE_FOOTPRINT_XY[1] + TABLE_SAFETY_MARGIN,
+)
+
 
 def topic_slug(class_name):
     """'coke can' -> 'coke_can'. Deve restare identica a quella in center_computation_all.py."""
@@ -219,7 +233,7 @@ class MoveGroupClient(Node):
         )
 
     def add_table_obstacle(self, frame_id=TABLE_FRAME,
-                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z)):
+                            dimensions=(*TABLE_FOOTPRINT_XY_WITH_MARGIN, TABLE_SURFACE_TOP_Z)):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
         ancorato a TABLE_FRAME (fisso nel mondo, non in base_footprint -- vedi
