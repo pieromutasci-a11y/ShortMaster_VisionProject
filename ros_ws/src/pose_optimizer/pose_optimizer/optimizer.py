@@ -8,7 +8,7 @@ from moveit_msgs.msg import (
     MotionPlanRequest, Constraints, PositionConstraint, OrientationConstraint,
     CollisionObject, PlanningScene, RobotState
 )
-from geometry_msgs.msg import PoseStamped, Pose, PointStamped
+from geometry_msgs.msg import PoseStamped, Pose, PointStamped, Point
 from shape_msgs.msg import SolidPrimitive
 from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
@@ -339,6 +339,32 @@ class MoveGroupClient(Node):
         for _ in range(5):
             marker.header.stamp = self.get_clock().now().to_msg()
             self._obstacles_marker_pub.publish(marker)
+            rclpy.spin_once(self, timeout_sec=0.3)
+
+        # Asse verticale sul centro ricostruito, stesso stile di quelli che
+        # detection_and_ranging disegna per coca/pringles/biscotti (una
+        # linea verticale, non solo un punto) -- qui per il tavolo, il cui
+        # "centro" e' ricostruito (vedi sopra), non rilevato direttamente.
+        axis_marker = Marker()
+        axis_marker.header.frame_id = frame_id
+        axis_marker.ns = "table_axis_debug"
+        axis_marker.id = 0
+        axis_marker.type = Marker.LINE_STRIP
+        axis_marker.action = Marker.ADD
+        axis_marker.scale.x = 0.02  # spessore della linea (m)
+        axis_marker.color.r = 1.0
+        axis_marker.color.g = 0.5
+        axis_marker.color.b = 0.0
+        axis_marker.color.a = 1.0
+        axis_length = 0.60  # piu' lungo del box (0.15m in altezza) per restare ben visibile sopra/sotto
+        axis_marker.points = [
+            Point(x=pose.position.x, y=pose.position.y, z=pose.position.z - axis_length / 2.0),
+            Point(x=pose.position.x, y=pose.position.y, z=pose.position.z + axis_length / 2.0),
+        ]
+        self._obstacle_markers["table_axis"] = axis_marker
+        for _ in range(5):
+            axis_marker.header.stamp = self.get_clock().now().to_msg()
+            self._obstacles_marker_pub.publish(axis_marker)
             rclpy.spin_once(self, timeout_sec=0.3)
 
     def _republish_obstacle_markers(self):
