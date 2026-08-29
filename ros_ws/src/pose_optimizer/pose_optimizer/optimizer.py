@@ -14,6 +14,10 @@ from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
+import tf2_ros
+import tf2_geometry_msgs  # noqa: F401  (registra il supporto a Pose per do_transform_pose)
+from tf2_geometry_msgs import do_transform_pose
+
 
 # Real Time Factor osservato della simulazione in questa macchina: gira a
 # circa 0.4x rispetto al tempo reale (CPU quasi satura, YOLO su CPU pesa
@@ -68,7 +72,7 @@ OBSTACLE_DIMENSIONS = {
 # invece si muove in generale (e' letteralmente cosa fa
 # orbit_around_table_node.py, in un ALTRO contesto -- la raccolta dataset).
 #
-# TENTATIVI PRECEDENTI (entrambi scartati, per due motivi diversi):
+# TENTATIVI PRECEDENTI (tutti scartati):
 #   1. Coordinate mondo Gazebo usate direttamente come coordinate 'map',
 #      assumendo che 'map' nascesse coincidente con lo spawn -- sbagliato,
 #      verificato in RViz (il box finiva sotto al robot).
@@ -78,16 +82,23 @@ OBSTACLE_DIMENSIONS = {
 #      tavolo e' variata da un run all'altro fino a 37cm rispetto al
 #      valore vero. Non un bug di formula, ma rumore nella stima SLAM che
 #      aspettare di piu' non elimina in modo affidabile.
+#   3. Ancorato a base_footprint (il robot non si muove IN QUESTO flusso
+#      specifico) -- risolve l'errore, ma smette di funzionare nel momento
+#      in cui la base viene mai comandata a muoversi, che e' un requisito
+#      reale del progetto, non un'ipotesi remota. Scartato.
 #
-# SOLUZIONE: in QUESTO flusso specifico (pose_optimizer_node), il robot non
-# si muove mai -- nessun nodo comanda la base qui, solo il braccio si
-# muove durante l'intera operazione. Quindi la premessa "il robot si
-# muove, serve un frame fisso nel mondo" non si applica in pratica: si puo'
-# ancorare il tavolo direttamente a base_footprint, con la posa nota per
-# certo (calcolata da due pose vere, sotto), SENZA passare da TF, SENZA
-# nessuna stima SLAM, quindi senza il suo errore. Se in futuro questo nodo
-# dovesse mai comandare anche la base, questa scelta andrebbe rivista.
-TABLE_FRAME = 'base_footprint'
+# SOLUZIONE: 'odom' -- un frame fisso nel mondo come 'map' (quindi resta
+# valido quando il robot si muove), ma senza il suo problema: 'odom' e'
+# integrazione odometrica dalle ruote, disponibile da SUBITO al boot senza
+# bisogno di convergenza (a differenza di 'map', che deve aspettare che
+# slam_toolbox elabori scan e si assesti). L'unico costo e' un lento drift
+# nel tempo/nella distanza percorsa (normale per qualunque odometria a
+# ruote) -- accettabile per gli spostamenti di questo robot, e comunque un
+# problema diverso e piu' piccolo del rumore di convergenza visto su 'map'.
+# Stessa logica di prima: si legge la TF vera base_footprint -> odom (non
+# si assume nessuna convenzione), ma 'odom' non ha bisogno di aspettare una
+# convergenza SLAM per essere pronta.
+TABLE_FRAME = 'odom'
 
 # Posa di spawn del robot nel mondo Gazebo (tiago_pro_gazebo/launch/
 # robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57") e posa vera del tavolo nel
@@ -175,6 +186,9 @@ class MoveGroupClient(Node):
         # qualsiasi (RViz non ancora avviato, aperto dopo, ecc.).
         self.create_timer(1.0, self._republish_obstacle_markers)
 
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
         # La coca (topic single-object) e' il target; pringles/biscuits
         # (topic multi-oggetto) sono usati come ostacoli in main().
@@ -222,17 +236,49 @@ class MoveGroupClient(Node):
                             dimensions=(*TABLE_FOOTPRINT_XY_WITH_MARGIN, TABLE_SURFACE_TOP_Z)):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
-        ancorato a TABLE_FRAME = 'base_footprint' (vedi commento sopra le
-        costanti TABLE_* per il perche': in questo flusso il robot non si
-        muove mai, quindi non serve un frame fisso nel mondo stimato da
-        SLAM -- la posa nota per certo rispetto al robot basta, senza TF).
+        ancorato a TABLE_FRAME = 'odom' -- fisso nel mondo (valido anche se
+        il robot si muove dopo), ma a differenza di 'map' disponibile da
+        subito, senza aspettare una convergenza SLAM (vedi commento sopra
+        le costanti TABLE_*).
+
+        La posa del tavolo E' NOTA rispetto al robot allo spawn
+        (TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN, da due pose vere: il world
+        file e robot_spawn.launch.py) -- va pero' convertita in TABLE_FRAME.
+        Leggiamo la TF vera base_footprint -> TABLE_FRAME (non si assume
+        nessuna convenzione, stesso principio di prima) -- ma stavolta il
+        frame di destinazione e' pronto quasi subito, non dopo una lunga
+        convergenza.
         """
-        pose = Pose()
-        pose.position.x = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[0]
-        pose.position.y = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[1]
-        pose.position.z = TABLE_SURFACE_TOP_Z / 2.0
-        (pose.orientation.x, pose.orientation.y,
-         pose.orientation.z, pose.orientation.w) = TABLE_ORIENTATION_QUAT_AT_SPAWN
+        table_in_base_footprint = Pose()
+        table_in_base_footprint.position.x = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[0]
+        table_in_base_footprint.position.y = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[1]
+        table_in_base_footprint.position.z = TABLE_SURFACE_TOP_Z / 2.0
+        (table_in_base_footprint.orientation.x, table_in_base_footprint.orientation.y,
+         table_in_base_footprint.orientation.z, table_in_base_footprint.orientation.w
+         ) = TABLE_ORIENTATION_QUAT_AT_SPAWN
+
+        transform = None
+        deadline = time.time() + real_seconds_for(10.0)
+        while transform is None and time.time() < deadline:
+            try:
+                transform = self.tf_buffer.lookup_transform(
+                    frame_id, "base_footprint", rclpy.time.Time()
+                )
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                    tf2_ros.ExtrapolationException) as error:
+                self.get_logger().warn(
+                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}",
+                    throttle_duration_sec=2.0,
+                )
+                rclpy.spin_once(self, timeout_sec=0.2)
+                time.sleep(0.3)
+        if transform is None:
+            self.get_logger().error(
+                f"TF {frame_id} <- base_footprint mai arrivata: tavolo NON aggiunto come ostacolo."
+            )
+            return
+
+        pose_in_frame = do_transform_pose(table_in_base_footprint, transform)
 
         obj = CollisionObject()
         obj.header.frame_id = frame_id
@@ -243,7 +289,7 @@ class MoveGroupClient(Node):
         primitive.dimensions = list(dimensions)
 
         obj.primitives.append(primitive)
-        obj.primitive_poses.append(pose)
+        obj.primitive_poses.append(pose_in_frame)
         obj.operation = CollisionObject.ADD
 
         scene = PlanningScene()
@@ -256,8 +302,8 @@ class MoveGroupClient(Node):
 
         self.get_logger().info(
             f"Tavolo aggiunto in {frame_id} a "
-            f"x={pose.position.x:.3f} y={pose.position.y:.3f} "
-            f"z={pose.position.z:.3f} (CollisionObject + marker debug pubblicati)."
+            f"x={pose_in_frame.position.x:.3f} y={pose_in_frame.position.y:.3f} "
+            f"z={pose_in_frame.position.z:.3f} (CollisionObject + marker debug pubblicati)."
         )
 
         # Marker separato, SOLO per debug visivo: la PlanningScene di RViz
@@ -273,7 +319,7 @@ class MoveGroupClient(Node):
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose = pose
+        marker.pose = pose_in_frame
         marker.scale.x, marker.scale.y, marker.scale.z = dimensions
         marker.color.r = 1.0
         marker.color.g = 0.5
