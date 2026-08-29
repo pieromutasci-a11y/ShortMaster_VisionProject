@@ -161,6 +161,17 @@ class MoveGroupClient(Node):
         self._obstacles_marker_pub = self.create_publisher(
             Marker, '/obstacles_debug_marker', 10
         )
+        # Gli ostacoli aggiunti finora, per poterli ripubblicare (vedi sotto).
+        self._obstacle_markers = {}
+        # Ripubblica periodicamente ogni marker di debug gia' calcolato,
+        # invece di pubblicarlo una volta sola: se un marker e' in un frame
+        # (es. 'map') la cui TF non e' ancora risolvibile per RViz nel
+        # preciso istante della pubblicazione, un singolo invio rischia di
+        # restare invisibile per sempre. Ripubblicandolo ogni secondo, non
+        # appena la TF si stabilizza (in qualsiasi momento) RViz riceve un
+        # messaggio fresco e lo mostra -- niente piu' da indovinare sul
+        # tempismo.
+        self.create_timer(1.0, self._republish_obstacle_markers)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
@@ -324,10 +335,18 @@ class MoveGroupClient(Node):
         marker.color.g = 0.5
         marker.color.b = 0.0
         marker.color.a = 0.5
+        self._obstacle_markers["table"] = marker
         for _ in range(5):
             marker.header.stamp = self.get_clock().now().to_msg()
             self._obstacles_marker_pub.publish(marker)
             rclpy.spin_once(self, timeout_sec=0.3)
+
+    def _republish_obstacle_markers(self):
+        """Chiamato dal timer: ripubblica ogni marker di debug gia' noto,
+        con uno stamp fresco -- vedi il commento nel costruttore."""
+        for marker in self._obstacle_markers.values():
+            marker.header.stamp = self.get_clock().now().to_msg()
+            self._obstacles_marker_pub.publish(marker)
 
     def wait_for_topics(self, attribute_getters, timeout_sec=10.0):
         """
@@ -393,6 +412,7 @@ class MoveGroupClient(Node):
         marker.color.g = 0.5
         marker.color.b = 0.0
         marker.color.a = 0.5
+        self._obstacle_markers[object_id] = marker
         for _ in range(5):
             marker.header.stamp = self.get_clock().now().to_msg()
             self._obstacles_marker_pub.publish(marker)
