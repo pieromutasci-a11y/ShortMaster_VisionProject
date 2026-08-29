@@ -2,19 +2,23 @@
 
 Riceve la posizione 3D degli oggetti rilevati da
 [`detection_and_ranging`](../detection_and_ranging) (gia' in `base_footprint`)
-e la manda a MoveIt (`move_group`) per pianificare una configurazione del
-braccio che raggiunga la lattina, evitando pringles, biscotti e il tavolo
-come ostacoli.
+e la manda a MoveIt (`move_group`) per pianificare **ed eseguire per
+davvero** una configurazione del braccio che raggiunga la lattina, evitando
+pringles, biscotti e il tavolo come ostacoli.
 
 **Stato: lavoro in corso.** Non ha ancora un proprio launch file / config
-MoveIt (rimossi insieme al vecchio client basato su PickIK) — per ora si
-presume un `move_group` gia' avviato altrove (es. lo stack standard di
-`tiago_pro_moveit_config`), da chiarire come prossimo passo.
+MoveIt (rimossi insieme al vecchio client basato su PickIK) — usa
+`move_group` avviato da `vision_pipeline/simulation.launch.py`
+(`moveit:=True`, incluso anche da `detection_and_ranging/full_stack.launch.py`).
 
 | File | Cosa fa |
 |---|---|
-| `pose_optimizer/optimizer.py` (`pose_optimizer_node`) | Client dell'action `/move_action`. Si iscrive a `cokecan_center_base_footprint` (target) e a `centers_all/<classe>_center_base_footprint` per `pringles can`/`biscuits pack` (ostacoli cilindrici, dimensioni vere dai modelli Gazebo). Il tavolo e' invece **noto a priori** (`add_table_obstacle`, non dalla detection — difficile da ricostruire dalla camera): un box pieno da terra al piano, con la posa vera del mondo Gazebo, ancorato al frame `map` (fisso nel mondo) invece che a `base_footprint`, perche' il robot si muove attorno al tavolo — un offset fisso rispetto al robot sarebbe corretto solo nell'istante in cui e' stato misurato. Invece di affidarsi a un solver IK "intelligente" (PickIK), usa KDL (analitico) ma **campiona piu' angoli di presa (yaw) attorno all'oggetto** — sfruttando la simmetria assiale di un cilindro, per cui l'oggetto non ha un lato "giusto" da cui essere afferrato, ma il braccio si' — e tiene la soluzione i cui giunti restano piu' lontani dai limiti (`calcola_distanza_limiti`). Pubblica un marker RViz per ogni candidato provato e la configurazione finale scelta su `/joint_states`, per l'ispezione visiva. |
+| `pose_optimizer/optimizer.py` (`pose_optimizer_node`) | Client dell'action `/move_action`. Si iscrive a `cokecan_center_base_footprint` (target) e a `centers_all/<classe>_center_base_footprint` per `pringles can`/`biscuits pack` (ostacoli cilindrici, dimensioni vere dai modelli Gazebo). Il tavolo e' invece **noto a priori** (`add_table_obstacle`, non dalla detection — difficile da ricostruire dalla camera): un box pieno da terra al piano, con la posa vera del mondo Gazebo, ancorato al frame `map` (fisso nel mondo) invece che a `base_footprint`, perche' il robot si muove attorno al tavolo — un offset fisso rispetto al robot sarebbe corretto solo nell'istante in cui e' stato misurato. Invece di affidarsi a un solver IK "intelligente" (PickIK), usa KDL (analitico) ma **campiona piu' angoli di presa (yaw) attorno all'oggetto** — sfruttando la simmetria assiale di un cilindro, per cui l'oggetto non ha un lato "giusto" da cui essere afferrato, ma il braccio si' — e tiene, tra i candidati riusciti, quello i cui giunti restano piu' lontani dai limiti (`calcola_distanza_limiti`). Lo sweep è **solo pianificazione** (`plan_only=True`, partenza finta a giunti zero — sicuro, il braccio non si muove); trovato il migliore, lo **esegue per davvero** con un'unica chiamata finale (`plan_only=False`, partenza dallo stato vero del braccio) — il braccio si muove in Gazebo/RViz. |
 
 ```bash
-ros2 run pose_optimizer pose_optimizer_node
+ros2 launch detection_and_ranging full_stack.launch.py   # simulazione + MoveIt + detection
+ros2 run pose_optimizer pose_optimizer_node               # calcola ed esegue la presa
 ```
+
+Non chiude il gripper — porta solo il braccio nella posa di presa scelta,
+la chiusura è un passo separato non ancora affrontato.

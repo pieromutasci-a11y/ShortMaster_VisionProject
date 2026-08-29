@@ -226,7 +226,20 @@ class MoveGroupClient(Node):
             rclpy.spin_once(self, timeout_sec=0.3)
 
     def send_goal(self, target_pose: PoseStamped, group_name="arm_left",
-                  link_name="gripper_left_grasping_link", start_positions=None):
+                  link_name="gripper_left_grasping_link", start_positions=None,
+                  plan_only=True):
+        """
+        start_positions=None -> pianifica dalla posizione VERA del braccio
+        (req.start_state.is_diff = True); altrimenti da quella indicata (usato
+        durante lo sweep esplorativo, per non doversi affidare allo stato
+        reale a ogni candidato).
+
+        plan_only=True (default) -> solo pianificazione, il braccio non si
+        muove. plan_only=False -> MoveIt esegue anche la traiettoria sul
+        controller vero: usarlo SOLO con start_positions=None (partenza
+        reale), altrimenti la traiettoria eseguita non partirebbe da dove il
+        braccio si trova davvero.
+        """
         self._client.wait_for_server()
 
         goal_msg = MoveGroup.Goal()
@@ -272,7 +285,7 @@ class MoveGroupClient(Node):
         req.goal_constraints.append(constraints)
 
         goal_msg.request = req
-        goal_msg.planning_options.plan_only = True
+        goal_msg.planning_options.plan_only = plan_only
 
         future = self._client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self, future)
@@ -306,10 +319,42 @@ def orientamento_pinza_orizzontale(yaw=0.0):
     return R_world_grasp.as_quat()
 
 
+def costruisci_target(position, yaw, raggio=0.05):
+    """
+    Posa di presa per un dato yaw: punto sul cerchio di raggio 'raggio'
+    attorno a 'position' (approccio laterale, non dall'alto esatto), con
+    l'orientamento del gripper coerente con quell'angolo.
+
+    Stessa formula usata sia nello sweep esplorativo sia per ricostruire il
+    target vincitore al momento dell'esecuzione vera -- deve restare
+    IDENTICA nei due punti, o la posa eseguita non sarebbe quella per cui
+    l'IK e' stato verificato.
+
+    #yaw = 0       x = -r  y = 0
+    #yaw = pi/2    x = 0   y = -r
+    #yaw = pi      x = r   y = 0
+    #yaw = 3*pi/2  x = 0   y = r
+    """
+    target = PoseStamped()
+    target.header.frame_id = "base_footprint"
+    target.pose.position.x = position[0] - raggio * np.cos(yaw)
+    target.pose.position.y = position[1] - raggio * np.sin(yaw)
+    target.pose.position.z = position[2]
+
+    quat = orientamento_pinza_orizzontale(yaw=yaw)
+    target.pose.orientation.x = quat[0]
+    target.pose.orientation.y = quat[1]
+    target.pose.orientation.z = quat[2]
+    target.pose.orientation.w = quat[3]
+
+    return target
+
+
 def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     """
-    Campiona diversi valori di yaw, prova l'IK per ciascuno (con KDL),
-    e restituisce la soluzione più lontana dai limiti di giunto.
+    Campiona diversi valori di yaw, prova l'IK per ciascuno (con KDL,
+    solo pianificazione -- il braccio non si muove qui), e restituisce
+    la soluzione più lontana dai limiti di giunto.
     """
     migliore = None
     migliore_costo = -5
@@ -317,27 +362,10 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     for i in range(n_campioni):
         yaw = 2 * np.pi * i / n_campioni
 
-        target = PoseStamped()
-        target.header.frame_id = "base_footprint"
-        target.pose.position.x = position[0] - raggio * np.cos(yaw)  # ruota la posizione target attorno all'asse z
-        target.pose.position.y = position[1] - raggio * np.sin(yaw)  # ruota la posizione target attorno all'asse z
-        target.pose.position.z = position[2]
-
-
-        #yaw = 0   x = -r e y = 0
-        #yaw = pi/2  x = 0 e y = -r
-        #yaw = pi  x = r e y = 0
-        #yaw = 3*pi/2  x = 0 e y = r
-
+        target = costruisci_target(position, yaw, raggio)
         pubblica_marker_target(node, (target.pose.position.x, target.pose.position.y, target.pose.position.z))
 
-        quat = orientamento_pinza_orizzontale(yaw=yaw)
-        target.pose.orientation.x = quat[0]
-        target.pose.orientation.y = quat[1]
-        target.pose.orientation.z = quat[2]
-        target.pose.orientation.w = quat[3]
-
-        result = node.send_goal(target, start_positions = [0.0]*7)
+        result = node.send_goal(target, start_positions=[0.0] * 7, plan_only=True)
 
         if result and result.result.error_code.val == 1:
             traj = result.result.planned_trajectory.joint_trajectory
@@ -433,22 +461,30 @@ def main():
     print("Pubblico marker del target...")
     node.publish_target_marker(target_marker)
 
-    # --- Sweep dello yaw, tieni la soluzione migliore ---
-    migliore = trova_yaw_ottimale(node, position=posizione_target, n_campioni=10, raggio=0.05)
+    # --- Sweep dello yaw (solo pianificazione, partenza finta, sicuro) ---
+    raggio_sweep = 0.05
+    migliore = trova_yaw_ottimale(node, position=posizione_target, n_campioni=10, raggio=raggio_sweep)
 
     if migliore:
         yaw, joint_names, positions = migliore
         print(f"\nMiglior yaw trovato: {yaw:.3f} rad")
-        print("Configurazione finale (rad):")
+        print("Configurazione finale (rad, dal planning esplorativo):")
         for name, pos in zip(joint_names, positions):
             print(f"  {name}: {pos:.4f}")
 
-        print("\nPubblico su /joint_states per la visualizzazione...")
-        node.publish_joint_state(
-            list(joint_names) + ['torso_lift_joint'],
-            list(positions) + [0.0]
-        )
-        print("Fatto. Controlla RViz.")
+        # --- Esecuzione REALE della posa vincitrice ---
+        # A differenza dello sweep sopra: partenza vera del braccio
+        # (start_positions=None) e plan_only=False, quindi MoveIt pianifica
+        # E ESEGUE per davvero -- il braccio si muove in Gazebo/RViz.
+        target_finale = costruisci_target(posizione_target, yaw, raggio_sweep)
+        print("\nEseguo la posa scelta sul braccio reale...")
+        risultato = node.send_goal(target_finale, start_positions=None, plan_only=False)
+
+        if risultato and risultato.result.error_code.val == 1:
+            print("Esecuzione completata con successo.")
+        else:
+            codice = risultato.result.error_code.val if risultato else "nessuna risposta"
+            print(f"Esecuzione fallita (error_code={codice}).")
     else:
         print("Nessuna soluzione trovata per nessun valore di yaw.")
 

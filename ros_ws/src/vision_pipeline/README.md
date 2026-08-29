@@ -9,10 +9,12 @@ supporto, e training/valutazione/inferenza YOLOv8.
 ### Simulazione (`launch/`)
 
 `ros2 launch vision_pipeline simulation.launch.py` avvia la simulazione
-Gazebo del TIAGo Pro (mondo, SLAM, navigazione) — e' il punto di partenza
-comune prima di lanciare raccolta dataset, detection o pianificazione.
-Argomenti: `world_name` (default `poliBaMaster`), `is_public_sim`, `slam`,
-`navigation` (default `True`).
+Gazebo del TIAGo Pro (mondo, SLAM, navigazione, MoveIt) — e' il punto di
+partenza comune prima di lanciare raccolta dataset, detection o
+pianificazione. Argomenti: `world_name` (default `poliBaMaster`),
+`is_public_sim`, `slam`, `navigation`, `moveit` (default `True` per tutti —
+`moveit` esplicito e non lasciato al default di sistema, perche'
+[`pose_optimizer`](../pose_optimizer) ha bisogno di `move_group` attivo).
 
 ```bash
 ros2 launch vision_pipeline simulation.launch.py

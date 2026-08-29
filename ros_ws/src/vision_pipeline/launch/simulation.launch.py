@@ -17,6 +17,10 @@ def generate_launch_description():
     is_public_sim_arg = DeclareLaunchArgument('is_public_sim', default_value='True')
     slam_arg = DeclareLaunchArgument('slam', default_value='True')
     navigation_arg = DeclareLaunchArgument('navigation', default_value='True')
+    # Esplicito (non lasciato al default di tiago_pro_gazebo.launch.py, che
+    # dipende da launch_pal e non è garantito): move_group deve essere su
+    # perché pose_optimizer possa pianificare/eseguire.
+    moveit_arg = DeclareLaunchArgument('moveit', default_value='True')
 
     tiago_pro_gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution([
@@ -27,6 +31,7 @@ def generate_launch_description():
             'is_public_sim': LaunchConfiguration('is_public_sim'),
             'slam': LaunchConfiguration('slam'),
             'navigation': LaunchConfiguration('navigation'),
+            'moveit': LaunchConfiguration('moveit'),
         }.items(),
     )
 
@@ -35,5 +40,6 @@ def generate_launch_description():
         is_public_sim_arg,
         slam_arg,
         navigation_arg,
+        moveit_arg,
         tiago_pro_gazebo_launch,
     ])
