@@ -111,12 +111,12 @@ OBSTACLE_DIMENSIONS = {
 TABLE_FRAME = 'odom'
 GAZEBO_ROBOT_MODEL_NAME = 'tiago_pro'  # tiago_pro_gazebo.launch.py: robot_name = 'tiago_pro'
 
-# Fallback (usato SOLO se il ground truth non arriva in tempo): posa di
-# spawn NOMINALE del robot nel mondo Gazebo (tiago_pro_gazebo/launch/
-# robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57") -- meno precisa (vedi
-# tentativo 4 sopra), ma meglio di niente se il bridge non e' disponibile.
-ROBOT_SPAWN_WORLD_XY = (5.0, 3.5)
-ROBOT_SPAWN_WORLD_YAW = 1.57
+# NIENTE fallback sulla posa di spawn nominale: il robot puo' essersi
+# spostato (teleop/navigazione) tra il lancio della simulazione e l'avvio
+# di questo nodo -- e' il workflow reale con cui viene usato, non
+# un'eccezione. Se il ground truth non arriva, il tavolo semplicemente non
+# viene aggiunto (vedi add_table_obstacle) -- niente stime di ripiego che
+# potrebbero essere pericolosamente sbagliate.
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 
 
@@ -255,10 +255,12 @@ class MoveGroupClient(Node):
         La posizione del tavolo rispetto al robot viene ricalcolata ORA,
         dalla posa VERA del robot nel mondo (ground truth Gazebo, vedi
         GAZEBO_ROBOT_MODEL_NAME) -- non dalla posa di spawn nominale
-        (imprecisa, vedi tentativo 4 sopra). Se il ground truth non arriva
-        in tempo (bridge non disponibile), usa quella nominale come
-        ripiego, con un avviso esplicito -- meglio di niente, ma meno
-        preciso. Il risultato va comunque convertito in TABLE_FRAME: si
+        (imprecisa, e comunque non piu' valida non appena il robot si
+        sposta, cosa che puo' succedere prima ancora di lanciare questo
+        nodo). Se il ground truth non arriva in tempo (bridge non
+        disponibile), il tavolo NON viene aggiunto -- niente stima di
+        ripiego potenzialmente pericolosa. Il risultato va comunque
+        convertito in TABLE_FRAME: si
         legge la TF vera base_footprint -> TABLE_FRAME (non si assume
         nessuna convenzione).
         """
@@ -270,23 +272,31 @@ class MoveGroupClient(Node):
                 rclpy.spin_once(self, timeout_sec=0.2)
                 time.sleep(0.2)
 
-        if ground_truth is not None:
-            t = ground_truth.transform.translation
-            q = ground_truth.transform.rotation
-            robot_world_xy = (t.x, t.y)
-            robot_world_yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')[2]
-            self.get_logger().info(
-                f"Ground truth robot: x={t.x:.3f} y={t.y:.3f} yaw={robot_world_yaw:.3f} rad "
-                f"(entita' '{GAZEBO_ROBOT_MODEL_NAME}')."
-            )
-        else:
-            self.get_logger().warn(
+        if ground_truth is None:
+            # NIENTE fallback sulla posa di spawn nominale: il robot puo'
+            # essersi spostato (teleop/navigazione) tra il lancio della
+            # simulazione e l'avvio di questo nodo -- e' letteralmente il
+            # workflow reale con cui viene usato. Usare la posa di spawn a
+            # quel punto sarebbe peggio che non aggiungere l'ostacolo: un
+            # box posizionato con falsa sicurezza in un punto qualsiasi,
+            # invece di sapere semplicemente che non c'e'. Meglio fallire
+            # in modo visibile (nessun ostacolo, lo si vede subito) che in
+            # modo silenzioso e pericoloso (ostacolo nel posto sbagliato).
+            self.get_logger().error(
                 f"Ground truth per '{GAZEBO_ROBOT_MODEL_NAME}' non arrivato "
-                f"(bridge /gazebo_ground_truth_poses non disponibile?) -- uso la posa di "
-                f"spawn NOMINALE come ripiego, meno precisa."
+                f"(bridge /gazebo_ground_truth_poses non disponibile?) -- "
+                f"tavolo NON aggiunto come ostacolo."
             )
-            robot_world_xy = ROBOT_SPAWN_WORLD_XY
-            robot_world_yaw = ROBOT_SPAWN_WORLD_YAW
+            return
+
+        t = ground_truth.transform.translation
+        q = ground_truth.transform.rotation
+        robot_world_xy = (t.x, t.y)
+        robot_world_yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')[2]
+        self.get_logger().info(
+            f"Ground truth robot: x={t.x:.3f} y={t.y:.3f} yaw={robot_world_yaw:.3f} rad "
+            f"(entita' '{GAZEBO_ROBOT_MODEL_NAME}')."
+        )
 
         table_position_base_footprint_now = _world_xy_to_local_xy(
             TABLE_WORLD_POSITION_XY, robot_world_xy, robot_world_yaw
