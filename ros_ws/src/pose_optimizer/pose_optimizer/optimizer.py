@@ -14,10 +14,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
-import tf2_ros
-import tf2_geometry_msgs  # noqa: F401  (registra il supporto a PoseStamped per do_transform_pose)
-from tf2_geometry_msgs import do_transform_pose
-
 
 # Real Time Factor osservato della simulazione in questa macchina: gira a
 # circa 0.4x rispetto al tempo reale (CPU quasi satura, YOLO su CPU pesa
@@ -69,34 +65,30 @@ OBSTACLE_DIMENSIONS = {
 # dalla camera -- bordi larghi, gambe sottili, poca texture) ---
 #
 # IMPORTANTE: il tavolo e' fisso nel MONDO, non rispetto al robot -- che
-# invece si muove (e' letteralmente cosa fa orbit_around_table_node.py). Va
-# quindi ancorato a un frame fisso nel mondo (TABLE_FRAME = 'map', presente
-# perche' la simulazione parte con slam:=True/navigation:=True), non a
-# base_footprint: un offset fisso in base_footprint sarebbe corretto solo
-# nell'istante in cui e' stato misurato, e sbagliato appena il robot si
-# sposta -- MoveIt calcola da solo, via TF, dove sta il tavolo rispetto al
-# braccio in ogni momento, qualunque sia la posizione del robot.
-TABLE_FRAME = 'map'
+# invece si muove in generale (e' letteralmente cosa fa
+# orbit_around_table_node.py, in un ALTRO contesto -- la raccolta dataset).
+#
+# TENTATIVI PRECEDENTI (entrambi scartati, per due motivi diversi):
+#   1. Coordinate mondo Gazebo usate direttamente come coordinate 'map',
+#      assumendo che 'map' nascesse coincidente con lo spawn -- sbagliato,
+#      verificato in RViz (il box finiva sotto al robot).
+#   2. 'map' letto via TF vera (corretto in linea di principio: non si
+#      assume piu' la convenzione) -- ma la stima di 'map' di slam_toolbox
+#      non e' assestata cosi' presto dopo l'avvio: la posa calcolata del
+#      tavolo e' variata da un run all'altro fino a 37cm rispetto al
+#      valore vero. Non un bug di formula, ma rumore nella stima SLAM che
+#      aspettare di piu' non elimina in modo affidabile.
+#
+# SOLUZIONE: in QUESTO flusso specifico (pose_optimizer_node), il robot non
+# si muove mai -- nessun nodo comanda la base qui, solo il braccio si
+# muove durante l'intera operazione. Quindi la premessa "il robot si
+# muove, serve un frame fisso nel mondo" non si applica in pratica: si puo'
+# ancorare il tavolo direttamente a base_footprint, con la posa nota per
+# certo (calcolata da due pose vere, sotto), SENZA passare da TF, SENZA
+# nessuna stima SLAM, quindi senza il suo errore. Se in futuro questo nodo
+# dovesse mai comandare anche la base, questa scelta andrebbe rivista.
+TABLE_FRAME = 'base_footprint'
 
-# --- Come si ottiene la posa del tavolo in 'map' ---
-# TENTATIVO PRECEDENTE (sbagliato, verificato in RViz -- il box finiva
-# praticamente sotto al robot): calcolare a mano la trasformazione mondo
-# Gazebo -> 'map' assumendo che 'map' nasca coincidente con la posa di spawn
-# del robot (convenzione tipica di slam_toolbox, ma evidentemente non
-# verificata giusta in questa configurazione specifica).
-#
-# Invece di indovinare ancora la convenzione di 'map', usiamo TF per
-# leggere la relazione VERA: sappiamo con certezza (dal world file e da
-# robot_spawn.launch.py, entrambi dati reali) dove sta il tavolo RISPETTO
-# AL ROBOT nell'istante in cui e' stato spawnato -- quell'offset locale e'
-# per costruzione corretto, non dipende da nessuna assunzione su 'map'.
-# All'avvio del nodo (il robot non si e' ancora mosso dalla posa di spawn,
-# nulla in questo stack comanda la base) chiediamo a TF la trasformazione
-# REALE base_footprint -> map in quel momento, e la usiamo per convertire
-# quell'offset locale noto in una posa 'map' -- qualunque sia la
-# convenzione usata da slam_toolbox, il risultato e' corretto perche' non
-# la stiamo piu' assumendo, la stiamo leggendo.
-#
 # Posa di spawn del robot nel mondo Gazebo (tiago_pro_gazebo/launch/
 # robot_spawn.launch.py: "-x 5.0 -y 3.5 -Y 1.57") e posa vera del tavolo nel
 # mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world, modello
@@ -178,16 +170,10 @@ class MoveGroupClient(Node):
         # Gli ostacoli aggiunti finora, per poterli ripubblicare (vedi sotto).
         self._obstacle_markers = {}
         # Ripubblica periodicamente ogni marker di debug gia' calcolato,
-        # invece di pubblicarlo una volta sola: se un marker e' in un frame
-        # (es. 'map') la cui TF non e' ancora risolvibile per RViz nel
-        # preciso istante della pubblicazione, un singolo invio rischia di
-        # restare invisibile per sempre. Ripubblicandolo ogni secondo, non
-        # appena la TF si stabilizza (in qualsiasi momento) RViz riceve un
-        # messaggio fresco e lo mostra -- niente piu' da indovinare sul
-        # tempismo.
+        # invece di pubblicarlo una volta sola -- economico e innocuo, e
+        # protegge comunque da un singolo messaggio perso per un motivo
+        # qualsiasi (RViz non ancora avviato, aperto dopo, ecc.).
         self.create_timer(1.0, self._republish_obstacle_markers)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
         # La coca (topic single-object) e' il target; pringles/biscuits
@@ -236,72 +222,17 @@ class MoveGroupClient(Node):
                             dimensions=(*TABLE_FOOTPRINT_XY_WITH_MARGIN, TABLE_SURFACE_TOP_Z)):
         """
         Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
-        ancorato a TABLE_FRAME (fisso nel mondo, non in base_footprint -- vedi
-        commento sopra le costanti TABLE_*).
-
-        La posa del tavolo E' NOTA rispetto al robot allo spawn
-        (TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN, derivata da due pose vere,
-        vedi sopra) -- ma va pubblicata in TABLE_FRAME, che e' fisso nel
-        mondo. Invece di indovinare come TABLE_FRAME si relaziona al mondo
-        Gazebo (tentativo precedente, verificato sbagliato: il box finiva
-        sotto al robot), chiediamo a TF la trasformazione VERA
-        base_footprint -> TABLE_FRAME in questo momento (il robot non si e'
-        ancora mosso dallo spawn) e la applichiamo alla posa nota -- cosi'
-        il risultato e' corretto qualunque sia la convenzione reale di
-        TABLE_FRAME, perche' non la stiamo piu' assumendo.
+        ancorato a TABLE_FRAME = 'base_footprint' (vedi commento sopra le
+        costanti TABLE_* per il perche': in questo flusso il robot non si
+        muove mai, quindi non serve un frame fisso nel mondo stimato da
+        SLAM -- la posa nota per certo rispetto al robot basta, senza TF).
         """
-        table_in_base_footprint = PoseStamped()
-        table_in_base_footprint.header.frame_id = "base_footprint"
-        table_in_base_footprint.pose.position.x = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[0]
-        table_in_base_footprint.pose.position.y = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[1]
-        table_in_base_footprint.pose.position.z = TABLE_SURFACE_TOP_Z / 2.0
-        (table_in_base_footprint.pose.orientation.x,
-         table_in_base_footprint.pose.orientation.y,
-         table_in_base_footprint.pose.orientation.z,
-         table_in_base_footprint.pose.orientation.w) = TABLE_ORIENTATION_QUAT_AT_SPAWN
-
-        # 'map' puo' metterci parecchio ad apparire nell'albero TF
-        # all'avvio (slam_toolbox + navigazione): visto in pratica un
-        # "due alberi TF non connessi" per oltre 15s prima che si
-        # stabilizzi, e anche dopo, errori transitori di extrapolation (la
-        # trasformazione risulta da una catena a due salti, map->odom e
-        # odom->base_footprint, pubblicati a frequenze diverse: capita che
-        # il "tempo comune piu' recente" richiesto non sia ancora nel
-        # buffer di uno dei due). Finestra larga apposta -- e va convertita
-        # con SIM_REAL_TIME_FACTOR (real time factor osservato ~0.4x):
-        # 'map' aggiorna col ritmo del tempo SIMULATO, quindi anche 30
-        # secondi di orologio reale possono valere solo ~12 secondi di
-        # simulazione, spesso non abbastanza perche' map->odom pubblichi un
-        # nuovo campione.
-        #
-        # IMPORTANTE: rclpy.spin_once(timeout_sec=...) NON garantisce di
-        # aspettare per davvero quella durata -- ritorna prima se c'e' gia'
-        # un callback pronto da processare (qui capita spesso, con le
-        # detection che arrivano di continuo), quindi da solo NON basta a
-        # far passare tempo reale perche' TF si aggiorni. Serve anche un
-        # time.sleep esplicito.
-        transform = None
-        deadline = time.time() + real_seconds_for(30.0)
-        while transform is None and time.time() < deadline:
-            try:
-                transform = self.tf_buffer.lookup_transform(
-                    frame_id, "base_footprint", rclpy.time.Time()
-                )
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
-                    tf2_ros.ExtrapolationException) as error:
-                self.get_logger().warn(
-                    f"TF {frame_id} <- base_footprint non ancora disponibile: {error}",
-                    throttle_duration_sec=2.0,
-                )
-                rclpy.spin_once(self, timeout_sec=0.2)
-                time.sleep(0.3)
-        if transform is None:
-            self.get_logger().error(
-                f"TF {frame_id} <- base_footprint mai arrivata: tavolo NON aggiunto come ostacolo."
-            )
-            return
-
-        pose_in_frame = do_transform_pose(table_in_base_footprint.pose, transform)
+        pose = Pose()
+        pose.position.x = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[0]
+        pose.position.y = TABLE_POSITION_BASE_FOOTPRINT_AT_SPAWN[1]
+        pose.position.z = TABLE_SURFACE_TOP_Z / 2.0
+        (pose.orientation.x, pose.orientation.y,
+         pose.orientation.z, pose.orientation.w) = TABLE_ORIENTATION_QUAT_AT_SPAWN
 
         obj = CollisionObject()
         obj.header.frame_id = frame_id
@@ -312,7 +243,7 @@ class MoveGroupClient(Node):
         primitive.dimensions = list(dimensions)
 
         obj.primitives.append(primitive)
-        obj.primitive_poses.append(pose_in_frame)
+        obj.primitive_poses.append(pose)
         obj.operation = CollisionObject.ADD
 
         scene = PlanningScene()
@@ -325,8 +256,8 @@ class MoveGroupClient(Node):
 
         self.get_logger().info(
             f"Tavolo aggiunto in {frame_id} a "
-            f"x={pose_in_frame.position.x:.3f} y={pose_in_frame.position.y:.3f} "
-            f"z={pose_in_frame.position.z:.3f} (CollisionObject + marker debug pubblicati)."
+            f"x={pose.position.x:.3f} y={pose.position.y:.3f} "
+            f"z={pose.position.z:.3f} (CollisionObject + marker debug pubblicati)."
         )
 
         # Marker separato, SOLO per debug visivo: la PlanningScene di RViz
@@ -334,16 +265,15 @@ class MoveGroupClient(Node):
         # (voxel dalla depth camera, spesso enorme -- es. il pavimento
         # intero) nello stesso colore, rendendo impossibile distinguerli a
         # vista. Questo marker disegna ESATTAMENTE la stessa posa/dimensioni
-        # appena pubblicate come CollisionObject (stesso frame_id, stessa
-        # pose_in_frame) -- deve rappresentare l'ostacolo vero 1:1, fisso nel
-        # mondo come lui, non un'approssimazione in un frame diverso.
+        # appena pubblicate come CollisionObject -- deve rappresentare
+        # l'ostacolo vero 1:1.
         marker = Marker()
         marker.header.frame_id = frame_id
         marker.ns = "table_obstacle_debug"
         marker.id = 0
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
-        marker.pose = pose_in_frame
+        marker.pose = pose
         marker.scale.x, marker.scale.y, marker.scale.z = dimensions
         marker.color.r = 1.0
         marker.color.g = 0.5
