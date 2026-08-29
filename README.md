@@ -52,10 +52,11 @@ robot per portare il braccio verso l'oggetto:
   occlusioni tra gli oggetti tracciati e campionamento di piu' punti sulla
   superficie del target ([`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs))
   per il fit del cerchio/asse a valle.
-- [`pose_optimizer`](ros_ws/src/pose_optimizer) — dato un target, calcola
-  (via MoveIt + plugin di cinematica inversa PickIK) una configurazione del
-  braccio che lo raggiunga, ottimizzando la posa invece di affidarsi alla
-  sola soluzione analitica.
+- [`pose_optimizer`](ros_ws/src/pose_optimizer) — collegato alla posizione
+  reale della lattina (target) e di pringles/biscotti (ostacoli), campiona
+  piu' angoli di presa attorno all'oggetto e sceglie, tra quelli
+  raggiungibili (MoveIt + KDL), la configurazione del braccio piu' lontana
+  dai limiti di giunto. Lavoro in corso.
 
 ## Struttura del repo
 
@@ -66,7 +67,7 @@ ros_ws/                     # workspace ROS2 (colcon)
     ├── vision_pipeline/       # dataset + training/eval YOLO + nodi di raccolta dati + launch simulazione
     ├── detection_and_ranging/ # detection + stima posizione 3D a runtime (incl. gestione occlusioni)
     ├── tiago_vision_msgs/     # messaggi custom usati da detection_and_ranging
-    ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + PickIK)
+    ├── pose_optimizer/        # pianificazione IK/posa per il grasping (MoveIt + KDL, sweep sullo yaw)
     └── pal_*, tiago_pro_*/    # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
 ```
 

@@ -1,21 +1,22 @@
 # pose_optimizer
 
-Prende una posa target (per ora impostata manualmente in
-`pose_optimizer_client.py`; in futuro verra' dalla posizione 3D pubblicata da
-[`detection_and_ranging`](../detection_and_ranging)) e la manda a MoveIt
-(`move_group`) per pianificare una configurazione del braccio che la
-raggiunga, usando il plugin di cinematica inversa **PickIK** (ottimizzazione
-numerica della posa, invece della sola soluzione analitica KDL) per il
-braccio sinistro.
+Riceve la posizione 3D degli oggetti rilevati da
+[`detection_and_ranging`](../detection_and_ranging) (gia' in `base_footprint`)
+e la manda a MoveIt (`move_group`) per pianificare una configurazione del
+braccio che raggiunga la lattina, evitando pringles e biscotti come ostacoli.
+
+**Stato: lavoro in corso.** Non ha ancora un proprio launch file / config
+MoveIt (rimossi insieme al vecchio client basato su PickIK) — per ora si
+presume un `move_group` gia' avviato altrove (es. lo stack standard di
+`tiago_pro_moveit_config`), da chiarire come prossimo passo.
 
 | File | Cosa fa |
 |---|---|
-| `pose_optimizer/pose_optimizer_client.py` (`pose_optimizer_client`) | Client dell'action `/move_action`: calcola l'orientamento del tool per una presa dall'alto, manda la posa target a MoveIt, pubblica un marker RViz e la configurazione finale su `/joint_states`. |
-| `launch/move_group_pickik.launch.py` | Copia locale (modificabile) del `move_group.launch.py` di `tiago_pro_moveit_config`, per lanciare `move_group` con la configurazione PickIK. |
-| `config/kinematics_pickik.yaml` | Solver IK per gruppo: `pick_ik/PickIkPlugin` per `arm_left`, KDL per gli altri gruppi. |
-| `config/tiago_pro_for_moveit.urdf` | URDF del TIAGo Pro usato per la pianificazione. |
+| `pose_optimizer/optimizer.py` (`pose_optimizer_node`) | Client dell'action `/move_action`. Si iscrive a `cokecan_center_base_footprint` (target) e a `centers_all/<classe>_center_base_footprint` per `pringles can`/`biscuits pack` (ostacoli, aggiunti alla planning scene come cilindri con le dimensioni vere dei modelli Gazebo). Invece di affidarsi a un solver IK "intelligente" (PickIK), usa KDL (analitico) ma **campiona piu' angoli di presa (yaw) attorno all'oggetto** — sfruttando la simmetria assiale di un cilindro, per cui l'oggetto non ha un lato "giusto" da cui essere afferrato, ma il braccio si' — e tiene la soluzione i cui giunti restano piu' lontani dai limiti (`calcola_distanza_limiti`). Pubblica un marker RViz per ogni candidato provato e la configurazione finale scelta su `/joint_states`, per l'ispezione visiva. |
 
 ```bash
-ros2 launch pose_optimizer move_group_pickik.launch.py
-ros2 run pose_optimizer pose_optimizer_client
+ros2 run pose_optimizer pose_optimizer_node
 ```
+
+Il tavolo come ostacolo (`add_table_obstacle`, gia' presente ma disattivato)
+e' un discorso a parte, non ancora affrontato.

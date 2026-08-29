@@ -1,3 +1,5 @@
+import time
+
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -26,6 +28,19 @@ COKE_CENTER_TOPIC = 'cokecan_center_base_footprint'
 # center_computation_all.py -- vedi topic_slug() li').
 TRACKED_CLASSES = ['coke can', 'pringles can', 'biscuits pack', 'dinner table']
 
+# Classi trattate come OSTACOLI (non target) nella scena di grasping. Il
+# tavolo (dinner table) e' un discorso a parte, non e' qui.
+OBSTACLE_CLASSES = ['pringles can', 'biscuits pack']
+
+# Dimensioni reali (raggio, altezza in metri) dei modelli Gazebo -- vedi
+# pal_gazebo_worlds/models/<nome>/model.sdf (<cylinder><radius>/<length>).
+# Stesso principio del raggio in center_computation_all.py: e' un prior
+# sull'OGGETTO, verificato sul modello vero, non un numero a caso.
+OBSTACLE_DIMENSIONS = {
+    'pringles can':  (0.04, 0.235),
+    'biscuits pack': (0.029, 0.15),
+}
+
 
 def topic_slug(class_name):
     """'coke can' -> 'coke_can'. Deve restare identica a quella in center_computation_all.py."""
@@ -41,9 +56,8 @@ class MoveGroupClient(Node):
         self._marker_pub = self.create_publisher(Marker, '/target_marker', 10)
 
         # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
-        # Per ora solo iscrizione e memorizzazione dell'ultimo valore: il
-        # planning continua a usare il target hardcoded in main(), il
-        # collegamento vero e' il prossimo passo.
+        # La coca (topic single-object) e' il target; pringles/biscuits
+        # (topic multi-oggetto) sono usati come ostacoli in main().
 
         self.latest_coke_center = None
         self.coke_center_sub = self.create_subscription(
@@ -97,6 +111,55 @@ class MoveGroupClient(Node):
 
         pose = Pose()
         pose.position.x, pose.position.y, pose.position.z = position
+        pose.orientation.w = 1.0
+
+        obj.primitives.append(primitive)
+        obj.primitive_poses.append(pose)
+        obj.operation = CollisionObject.ADD
+
+        scene = PlanningScene()
+        scene.world.collision_objects.append(obj)
+        scene.is_diff = True
+
+        for _ in range(5):
+            self._scene_pub.publish(scene)
+            rclpy.spin_once(self, timeout_sec=0.3)
+
+    def wait_for_topics(self, attribute_getters, timeout_sec=10.0):
+        """
+        Spinna il nodo finche' tutti gli attribute_getters (funzioni node -> valore)
+        restituiscono un valore non-None, o scade il timeout. Serve ad aspettare
+        che le detection siano arrivate prima di iniziare a pianificare, invece
+        di partire subito con dati mancanti.
+        """
+        deadline = time.time() + timeout_sec
+        while rclpy.ok() and time.time() < deadline:
+            if all(getter(self) is not None for getter in attribute_getters):
+                return True
+            rclpy.spin_once(self, timeout_sec=0.2)
+        return all(getter(self) is not None for getter in attribute_getters)
+
+    def add_object_obstacle(self, object_id, center: PointStamped, radius, height):
+        """
+        Aggiunge un ostacolo cilindrico verticale alla planning scene, nel
+        punto (gia' corretto, gia' in base_footprint) pubblicato da
+        detection_and_ranging. Un cilindro e' la forma giusta qui: sia
+        pringles che biscuits pack sono modellati come cilindri anche in
+        Gazebo (vedi OBSTACLE_DIMENSIONS), e il centro che riceviamo e' gia'
+        sull'asse verticale dell'oggetto -- lo stesso ragionamento geometrico
+        di center_computation.py/center_computation_all.py.
+        """
+        obj = CollisionObject()
+        obj.header.frame_id = center.header.frame_id
+        obj.id = object_id
+
+        primitive = SolidPrimitive()
+        primitive.type = SolidPrimitive.CYLINDER
+        # Ordine richiesto da SolidPrimitive per CYLINDER: [altezza, raggio].
+        primitive.dimensions = [height, radius]
+
+        pose = Pose()
+        pose.position = center.point
         pose.orientation.w = 1.0
 
         obj.primitives.append(primitive)
@@ -292,15 +355,43 @@ def main():
     rclpy.init()
     node = MoveGroupClient()
 
-    # --- Ostacolo: tavolo (opzionale, per ora disattivato) ---
+    # --- Aspetta la detection del target (la coca) ---
+    # Senza questo, si rischia di partire con latest_coke_center ancora None
+    # (il nodo di detection puo' metterci qualche secondo, specie con YOLO
+    # su CPU) e piantare subito dopo su un attributo mancante.
+    print("Aspetto la detection della coca su cokecan_center_base_footprint...")
+    if not node.wait_for_topics([lambda n: n.latest_coke_center], timeout_sec=15.0):
+        print("Nessuna detection della coca ricevuta in tempo, esco.")
+        node.destroy_node()
+        rclpy.shutdown()
+        return
+
+    coke_center = node.latest_coke_center
+    posizione_target = (coke_center.point.x, coke_center.point.y, coke_center.point.z)
+    print(f"Target (coca): x={posizione_target[0]:.3f} y={posizione_target[1]:.3f} z={posizione_target[2]:.3f}")
+
+    # --- Ostacoli: pringles e biscotti, se rilevati in questo momento ---
+    # Diamo una finestra breve per raccogliere quello che e' arrivato nel
+    # frattempo (le callback girano solo mentre il nodo spinna) -- un
+    # ostacolo mancante qui non blocca il planning, semplicemente MoveIt non
+    # sapra' di doverlo evitare.
+    rclpy.spin_once(node, timeout_sec=1.0)
+    for class_name in OBSTACLE_CLASSES:
+        center = node.latest_centers_all.get(class_name)
+        if center is None:
+            print(f"Nessuna detection recente per '{class_name}', ostacolo non aggiunto.")
+            continue
+        radius, height = OBSTACLE_DIMENSIONS[class_name]
+        print(f"Aggiungo ostacolo '{class_name}' (r={radius}, h={height}) "
+              f"a x={center.point.x:.3f} y={center.point.y:.3f} z={center.point.z:.3f}")
+        node.add_object_obstacle(topic_slug(class_name), center, radius, height)
+
+    # --- Ostacolo: tavolo (discorso a parte, per ora disattivato) ---
     # print("Aggiungo ostacolo (tavolo)...")
     # node.add_table_obstacle(
     #     position=(0.4, 0.0, 0.375),
     #     dimensions=(0.2, 0.4, 0.6)
     # )
-
-    # --- Posizione target (il centro della lattina, o punto di presa) ---
-    posizione_target = (0.8, 0.0, 0.3)
 
     # --- Marker visivo per il target ---
     target_marker = PoseStamped()
