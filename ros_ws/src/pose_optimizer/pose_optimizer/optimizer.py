@@ -80,7 +80,6 @@ class MoveGroupClient(Node):
         self._client = ActionClient(self, MoveGroup, '/move_action')
         self._joint_pub = self.create_publisher(JointState, '/joint_states', 10)
         self._scene_pub = self.create_publisher(PlanningScene, '/planning_scene', 10)
-        self._marker_pub = self.create_publisher(Marker, '/target_marker', 10)
         self._candidates_marker_pub = self.create_publisher(
             MarkerArray, '/grasp_candidates_marker', 10
         )
@@ -209,31 +208,10 @@ class MoveGroupClient(Node):
             self._scene_pub.publish(scene)
             rclpy.spin_once(self, timeout_sec=0.3)
 
-    def publish_target_marker(self, pose_stamped: PoseStamped):
-        m = Marker()
-        m.header.frame_id = pose_stamped.header.frame_id
-        m.ns = "target"
-        m.id = 0
-        m.type = Marker.SPHERE
-        m.action = Marker.ADD
-        m.pose = pose_stamped.pose
-        m.scale.x = m.scale.y = m.scale.z = 0.04
-        m.color.r = 1.0
-        m.color.g = 0.0
-        m.color.b = 0.0
-        m.color.a = 1.0
-
-        for _ in range(10):
-            m.header.stamp = self.get_clock().now().to_msg()
-            self._marker_pub.publish(m)
-            rclpy.spin_once(self, timeout_sec=0.3)
-
     def publish_candidates_markers(self, candidati, frame_id="base_footprint"):
         """
         Disegna TUTTI i punti della circonferenza di presa in un colpo solo
-        (a differenza di publish_target_marker, che pubblica un singolo
-        marker sovrascritto ad ogni chiamata -- qui ogni candidato ha un suo
-        id, quindi restano visibili tutti insieme).
+        -- ogni candidato ha un suo id, quindi restano visibili tutti insieme.
 
         candidati: lista di dict {x, y, z, stato}, stato in
         {'in_attesa', 'ok', 'fallito', 'migliore'}.
@@ -531,17 +509,11 @@ def main():
           f"a x={TABLE_POSITION_XY[0]} y={TABLE_POSITION_XY[1]}...")
     node.add_table_obstacle()
 
-    # --- Marker visivo per il target ---
-    target_marker = PoseStamped()
-    target_marker.header.frame_id = "base_footprint"
-    target_marker.pose.position.x = posizione_target[0]
-    target_marker.pose.position.y = posizione_target[1]
-    target_marker.pose.position.z = posizione_target[2]
-    target_marker.pose.orientation.w = 1.0
-    print("Pubblico marker del target...")
-    node.publish_target_marker(target_marker)
+    # Niente marker per il centro della lattina qui: lo pubblica gia'
+    # center_computation_all.py su centers_all/coke_can_axis (asse verticale
+    # reale, non solo un punto) -- ripeterlo qui sarebbe ridondante.
 
-    # --- Sweep dello yaw (solo pianificazione, partenza finta, sicuro) ---
+    # --- Sweep dello yaw (solo pianificazione, partenza dallo stato vero) ---
     raggio_sweep = 0.05
     migliore = trova_yaw_ottimale(node, position=posizione_target, n_campioni=10, raggio=raggio_sweep)
 
