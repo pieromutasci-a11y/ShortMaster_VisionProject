@@ -124,9 +124,9 @@ TABLE_FRAME = 'base_footprint'
 # degli stessi oggetti che il robot rileva -- servono come "punti noti" per
 # ricostruire la trasformazione mondo -> base_footprint (vedi sopra).
 KNOWN_OBJECT_WORLD_XY = {
-    'coke can':      (5.0, 4.70),   # leggermente piu' indietro -- test obstacle avoidance
+    'coke can':      (5.0, 4.65),
     'pringles can':  (5.25, 5.05),
-    'biscuits pack': (4.90, 4.65),  # accanto e leggermente piu' avanti (verso il robot) della coca -- test obstacle avoidance
+    'biscuits pack': (4.90, 4.95),
 }
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 
