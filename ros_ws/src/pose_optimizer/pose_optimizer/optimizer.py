@@ -215,23 +215,33 @@ class MoveGroupClient(Node):
         # 'map' puo' metterci parecchio ad apparire nell'albero TF
         # all'avvio (slam_toolbox + navigazione): visto in pratica un
         # "due alberi TF non connessi" per oltre 15s prima che si
-        # stabilizzi. Finestra di attesa larga apposta (60 tentativi x
-        # 0.5s = 30s) per non perdere l'ostacolo tavolo per un timeout
-        # troppo stretto.
+        # stabilizzi, e anche dopo, errori transitori di extrapolation (la
+        # trasformazione risulta da una catena a due salti, map->odom e
+        # odom->base_footprint, pubblicati a frequenze diverse: capita che
+        # il "tempo comune piu' recente" richiesto non sia ancora nel
+        # buffer di uno dei due). Finestra larga apposta (fino a 30s).
+        #
+        # IMPORTANTE: rclpy.spin_once(timeout_sec=...) NON garantisce di
+        # aspettare per davvero quella durata -- ritorna prima se c'e' gia'
+        # un callback pronto da processare (qui capita spesso, con le
+        # detection che arrivano di continuo), quindi da solo NON basta a
+        # far passare tempo reale perche' TF si aggiorni. Serve anche un
+        # time.sleep esplicito.
         transform = None
-        for _ in range(60):
+        deadline = time.time() + 30.0
+        while transform is None and time.time() < deadline:
             try:
                 transform = self.tf_buffer.lookup_transform(
                     frame_id, "base_footprint", rclpy.time.Time()
                 )
-                break
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
                     tf2_ros.ExtrapolationException) as error:
                 self.get_logger().warn(
                     f"TF {frame_id} <- base_footprint non ancora disponibile: {error}",
                     throttle_duration_sec=2.0,
                 )
-                rclpy.spin_once(self, timeout_sec=0.5)
+                rclpy.spin_once(self, timeout_sec=0.2)
+                time.sleep(0.3)
         if transform is None:
             self.get_logger().error(
                 f"TF {frame_id} <- base_footprint mai arrivata: tavolo NON aggiunto come ostacolo."
