@@ -41,6 +41,33 @@ OBSTACLE_DIMENSIONS = {
     'biscuits pack': (0.029, 0.15),
 }
 
+# --- Tavolo: nota a priori, non dalla detection (difficile da ricostruire
+# dalla camera -- bordi larghi, gambe sottili, poca texture) ---
+#
+# IMPORTANTE: il tavolo e' fisso nel MONDO, non rispetto al robot -- che
+# invece si muove (e' letteralmente cosa fa orbit_around_table_node.py). Va
+# quindi ancorato a un frame fisso nel mondo (TABLE_FRAME = 'map', presente
+# perche' la simulazione parte con slam:=True/navigation:=True), non a
+# base_footprint: un offset fisso in base_footprint sarebbe corretto solo
+# nell'istante in cui e' stato misurato, e sbagliato appena il robot si
+# sposta -- MoveIt calcola da solo, via TF, dove sta il tavolo rispetto al
+# braccio in ogni momento, qualunque sia la posizione del robot.
+TABLE_FRAME = 'map'
+
+# Posa vera del tavolo nel mondo Gazebo (pal_gazebo_worlds/worlds/poliBaMaster.world,
+# modello s3_table, nessuna rotazione).
+TABLE_POSITION_XY = (5.0, 5.0)
+
+# Geometria vera (pal_gazebo_worlds/models/table_0m8/table.sdf): piano
+# 1.0 x 0.8 x 0.03 a z locale 0.8 -> superficie a z=0.815 (coerente col resto
+# del progetto, es. CENTER_Z in orbit_around_table_node.py). Le 4 gambe
+# sottili (cilindri r=0.02) non sono modellate qui: un unico box pieno da
+# terra alla superficie e' piu' semplice e comunque MAI meno sicuro della
+# realta' (il gruppo di planning e' solo il braccio, non la base -- non
+# serve che passi "tra le gambe").
+TABLE_SURFACE_TOP_Z = 0.815
+TABLE_FOOTPRINT_XY = (1.0, 0.8)
+
 
 def topic_slug(class_name):
     """'coke can' -> 'coke_can'. Deve restare identica a quella in center_computation_all.py."""
@@ -98,9 +125,14 @@ class MoveGroupClient(Node):
             throttle_duration_sec=2.0,
         )
 
-    def add_table_obstacle(self, frame_id="base_footprint",
-                            position=(0.8, 0.0, 0.375),
-                            dimensions=(0.8, 0.8, 0.75)):
+    def add_table_obstacle(self, frame_id=TABLE_FRAME,
+                            position=(*TABLE_POSITION_XY, TABLE_SURFACE_TOP_Z / 2.0),
+                            dimensions=(*TABLE_FOOTPRINT_XY, TABLE_SURFACE_TOP_Z)):
+        """
+        Box pieno da terra (z=0) alla superficie del tavolo (z=TABLE_SURFACE_TOP_Z),
+        ancorato a TABLE_FRAME (fisso nel mondo, non in base_footprint -- vedi
+        commento sopra le costanti TABLE_*).
+        """
         obj = CollisionObject()
         obj.header.frame_id = frame_id
         obj.id = "table"
@@ -386,12 +418,10 @@ def main():
               f"a x={center.point.x:.3f} y={center.point.y:.3f} z={center.point.z:.3f}")
         node.add_object_obstacle(topic_slug(class_name), center, radius, height)
 
-    # --- Ostacolo: tavolo (discorso a parte, per ora disattivato) ---
-    # print("Aggiungo ostacolo (tavolo)...")
-    # node.add_table_obstacle(
-    #     position=(0.4, 0.0, 0.375),
-    #     dimensions=(0.2, 0.4, 0.6)
-    # )
+    # --- Ostacolo: tavolo (noto a priori, non dalla detection -- vedi TABLE_*) ---
+    print(f"Aggiungo ostacolo 'table' in {TABLE_FRAME} "
+          f"a x={TABLE_POSITION_XY[0]} y={TABLE_POSITION_XY[1]}...")
+    node.add_table_obstacle()
 
     # --- Marker visivo per il target ---
     target_marker = PoseStamped()
