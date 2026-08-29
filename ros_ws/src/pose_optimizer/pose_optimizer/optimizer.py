@@ -113,7 +113,7 @@ TABLE_FRAME = 'base_footprint'
 KNOWN_OBJECT_WORLD_XY = {
     'coke can':      (5.0, 4.65),
     'pringles can':  (5.25, 5.05),
-    'biscuits pack': (4.90, 4.95),
+    'biscuits pack': (5.10, 4.65),  # spostati accanto alla coca per un test di obstacle avoidance
 }
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 
