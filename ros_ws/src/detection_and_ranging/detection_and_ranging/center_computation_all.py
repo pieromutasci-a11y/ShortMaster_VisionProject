@@ -57,8 +57,12 @@ Marker non sanno portare sta fuori dal payload:
     riconoscibili perche' condividono header.stamp (vengono dallo stesso
     frame camera). Il contatore degli id marker si azzera al cambio di stamp,
     cosi' le lattine di uno stesso frame prendono id 0, 1, 2...
-  - i marker hanno una lifetime breve: quando un oggetto esce di scena il suo
-    marker scade da solo, senza dover tenere traccia di quali id cancellare.
+  - i marker NON hanno una lifetime (vedi AXIS_MARKER_LENGTH): restano a
+    schermo finche' non arriva un aggiornamento che li sovrascrive, invece
+    di scadere da soli -- una lifetime breve li faceva lampeggiare ogni
+    volta che YOLO (su CPU) rallentava. Se un oggetto esce davvero di scena
+    il suo asse resta stantio finche' non arriva una nuova detection della
+    stessa classe (nessuna pulizia automatica per ora).
 """
 import math
 
@@ -66,7 +70,6 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point, PointStamped
 from visualization_msgs.msg import Marker
-from builtin_interfaces.msg import Duration
 
 import tf2_ros
 import tf2_geometry_msgs  # noqa: F401  (registra il supporto a PointStamped per do_transform_point)
@@ -108,11 +111,15 @@ DEFAULT_AXIS_COLOR = (0.0, 1.0, 0.0)   # verde, per una classe senza colore asse
 
 AXIS_MARKER_LENGTH = 0.40   # lunghezza del segmento disegnato in RViz (solo visualizzazione,
                             # volutamente piu' lungo dell'oggetto vero per essere ben visibile)
-# Deve essere piu' lungo dell'intervallo fra due detection successive, altrimenti
-# il marker scade prima di essere ripubblicato e si vede lampeggiare: con la
-# simulazione rallentata e YOLO su CPU passa piu' di un secondo fra un frame
-# elaborato e il successivo.
-AXIS_MARKER_LIFETIME_SEC = 3.0
+# Niente lifetime (come in center_computation.py, il nodo single-object):
+# il marker resta a schermo finche' non arriva un aggiornamento che lo
+# sovrascrive, invece di scadere da solo dopo un tot di secondi -- con YOLO
+# su CPU la cadenza delle detection non e' costante, e una lifetime breve
+# (provato: 3s) lo faceva scomparire e ricomparire di continuo anche con
+# l'oggetto fermo e ben visibile. La rinuncia e' che se un oggetto lascia
+# davvero la scena il suo asse resta appeso (stantio) finche' non arriva
+# una nuova detection della stessa classe -- accettabile per ora, uguale al
+# comportamento gia' in uso nel nodo single-object.
 TARGET_FRAME = 'base_footprint'   # frame con asse Z verticale (gravita'), per disegnare l'asse correttamente
 
 
@@ -277,12 +284,9 @@ class CenterComputationAllNode(Node):
         marker.color.g = green
         marker.color.b = blue
         marker.color.a = 1.0
-        # Senza lifetime i marker delle istanze sparite resterebbero appesi in
-        # RViz: qui scadono da soli se non vengono ripubblicati.
-        marker.lifetime = Duration(
-            sec=int(AXIS_MARKER_LIFETIME_SEC),
-            nanosec=int((AXIS_MARKER_LIFETIME_SEC % 1) * 1e9),
-        )
+        # Nessuna lifetime -- vedi commento su AXIS_MARKER_LENGTH: resta a
+        # schermo finche' non arriva un aggiornamento, niente scadenza
+        # automatica (altrimenti lampeggia quando YOLO rallenta).
         marker.points = [
             Point(x=cx, y=cy, z=cz - AXIS_MARKER_LENGTH / 2.0),
             Point(x=cx, y=cy, z=cz + AXIS_MARKER_LENGTH / 2.0),
