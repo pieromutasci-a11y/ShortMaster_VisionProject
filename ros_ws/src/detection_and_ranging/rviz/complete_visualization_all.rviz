@@ -665,9 +665,9 @@ Visualization Manager:
       Value: /table_obstacle_debug_marker
     Value: true
   - Class: moveit_rviz_plugin/PlanningScene
-    Enabled: true
+    Enabled: false
     Move Group Namespace: ''
-    Name: PlanningScene (ostacoli MoveIt -- include anche l'octomap del pavimento, rumoroso ma e' la vista autoritativa di cosa vede davvero MoveIt)
+    Name: PlanningScene (SPENTA -- mostra anche l'octomap del pavimento, il rettangolo verde sbagliato sotto al robot. Per vedere SOLO il tavolo vero usa "Table obstacle (debug, pose_optimizer)" qui sotto)
     Planning Scene Topic: /monitored_planning_scene
     Robot Description: robot_description
     Scene Geometry:
