@@ -609,21 +609,16 @@ def main():
     posizione_target = (coke_center.point.x, coke_center.point.y, coke_center.point.z)
     print(f"Target (coca): x={posizione_target[0]:.3f} y={posizione_target[1]:.3f} z={posizione_target[2]:.3f}")
 
-    # --- Ostacoli: pringles e biscotti, se rilevati in questo momento ---
-    # Diamo una finestra vera (fino a OBSTACLE_WAIT_SEC) per raccogliere le
-    # detection (le callback girano solo mentre il nodo spinna) -- un
-    # ostacolo mancante qui non blocca il planning, semplicemente MoveIt non
-    # sapra' di doverlo evitare. Una singola spin_once(timeout_sec=1.0) NON
-    # basta: come per la TF del tavolo, YOLO su CPU puo' metterci diversi
-    # secondi a rilevare ogni classe, quindi serve un ciclo con un vero
-    # deadline, non un'unica attesa breve.
-    OBSTACLE_WAIT_SEC = 8.0
-    deadline = time.time() + OBSTACLE_WAIT_SEC
-    while time.time() < deadline and not all(
-        node.latest_centers_all.get(c) is not None for c in OBSTACLE_CLASSES
-    ):
-        rclpy.spin_once(node, timeout_sec=0.2)
-        time.sleep(0.2)
+    # --- Ostacoli: pringles e biscotti, se rilevati ---
+    # Stesso meccanismo usato sopra per la coca (wait_for_topics): parte
+    # SUBITO appena arrivano le detection, non aspetta comunque fino alla
+    # fine -- il numero e' solo un tetto massimo nel caso non arrivino mai
+    # (un ostacolo mancante non blocca il planning, MoveIt semplicemente non
+    # sapra' di doverlo evitare), non una pausa fissa da rispettare sempre.
+    node.wait_for_topics(
+        [lambda n, c=c: n.latest_centers_all.get(c) for c in OBSTACLE_CLASSES],
+        timeout_sec=8.0,
+    )
 
     for class_name in OBSTACLE_CLASSES:
         center = node.latest_centers_all.get(class_name)
