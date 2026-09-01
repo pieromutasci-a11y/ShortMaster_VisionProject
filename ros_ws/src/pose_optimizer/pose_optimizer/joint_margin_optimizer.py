@@ -181,6 +181,19 @@ TABLE_FOOTPRINT_XY_WITH_MARGIN = (
     TABLE_FOOTPRINT_XY[1] + TABLE_SAFETY_MARGIN,
 )
 
+# Limiti reali del braccio sinistro, presi dall'URDF (rad) -- usati sia dal
+# criterio di scelta (calcola_distanza_limiti) sia dal grafico di debug
+# (plot_candidati_giunti), da qui', costante unica, non duplicata.
+JOINT_LIMITS = {
+    'arm_left_1_joint': (-0.524, 4.712),
+    'arm_left_2_joint': (-2.443, 1.134),
+    'arm_left_3_joint': (-2.618, 2.618),
+    'arm_left_4_joint': (-2.443, 1.134),
+    'arm_left_5_joint': (-3.665, 1.571),
+    'arm_left_6_joint': (-1.885, 3.002),
+    'arm_left_7_joint': (-2.443, 2.443),
+}
+
 
 def topic_slug(class_name):
     """'coke can' -> 'coke_can'. Deve restare identica a quella in center_computation_all.py."""
@@ -636,6 +649,7 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     # candidati riusciti abbiano giunti molto vicini ai limiti.
     migliore_costo = -float('inf')
     migliore_indice = None
+    candidati_riusciti = []  # per il grafico di debug, vedi plot_candidati_giunti
 
     # Punti della circonferenza calcolati tutti in anticipo (stesso raggio,
     # posizione, yaw campionati uniformemente) cosi' da poterli disegnare
@@ -661,6 +675,11 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
             print(f"yaw={yaw:.2f} rad -> SUCCESSO, costo={costo:.4f}")
 
             candidati[i]['stato'] = 'ok'
+            candidati_riusciti.append({
+                'yaw': yaw, 'indice_globale': i,
+                'joint_names': list(traj.joint_names), 'positions': list(positions),
+                'costo': costo,
+            })
 
             if costo > migliore_costo:
                 migliore_costo = costo
@@ -677,29 +696,74 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
         candidati[migliore_indice]['stato'] = 'migliore'
         node.publish_candidates_markers(candidati)
 
+    plot_candidati_giunti(candidati_riusciti, migliore_indice)
+
     return migliore
     
 
 
 def calcola_distanza_limiti(joint_names, positions):
-    # Limiti reali del braccio sinistro, presi dall'URDF (rad)
-    limiti = {
-        'arm_left_1_joint': (-0.524, 4.712),
-        'arm_left_2_joint': (-2.443, 1.134),
-        'arm_left_3_joint': (-2.618, 2.618),
-        'arm_left_4_joint': (-2.443, 1.134),
-        'arm_left_5_joint': (-3.665, 1.571),
-        'arm_left_6_joint': (-1.885, 3.002),
-        'arm_left_7_joint': (-2.443, 2.443),
-    }
     costo_totale = 0.0
     for name, pos in zip(joint_names, positions):
-        if name in limiti:
-            lower, upper = limiti[name]
+        if name in JOINT_LIMITS:
+            lower, upper = JOINT_LIMITS[name]
             centro = (lower + upper) / 2
             semi_range = (upper - lower) / 2
             costo_totale += ((pos - centro) / semi_range) ** 2
     return -costo_totale  # negativo: più vicino a 0 = più centrato = meglio
+
+
+def plot_candidati_giunti(candidati_riusciti, migliore_indice_globale,
+                           output_path='/tmp/joint_margin_candidates.png'):
+    """
+    Per ogni candidato RIUSCITO (raggiungibile e senza collisioni), disegna
+    i suoi 7 angoli di giunto confrontati con i rispettivi limiti -- un
+    grafico per giunto, cosi' si vede a colpo d'occhio quanto ciascun
+    candidato resta lontano dai limiti, giunto per giunto (non solo il
+    punteggio aggregato, calcola_distanza_limiti).
+
+    candidati_riusciti: lista di dict {yaw, indice_globale, joint_names,
+    positions, costo} -- uno per ogni candidato con error_code SUCCESS,
+    NON solo il migliore.
+    """
+    if not candidati_riusciti:
+        print("Nessun candidato riuscito, niente da plottare.")
+        return
+
+    import matplotlib
+    matplotlib.use('Agg')  # nodo headless, nessun display
+    import matplotlib.pyplot as plt
+
+    joint_order = list(JOINT_LIMITS.keys())
+    fig, axes = plt.subplots(len(joint_order), 1, figsize=(9, 2.0 * len(joint_order)), sharex=True)
+
+    for ax, joint_name in zip(axes, joint_order):
+        lower, upper = JOINT_LIMITS[joint_name]
+        centro = (lower + upper) / 2
+
+        xs, ys, colors = [], [], []
+        for c in candidati_riusciti:
+            idx = c['joint_names'].index(joint_name)
+            xs.append(c['yaw'])
+            ys.append(c['positions'][idx])
+            colors.append('gold' if c['indice_globale'] == migliore_indice_globale else 'tab:blue')
+
+        ax.axhline(lower, color='red', linestyle='--', linewidth=1, label='limite')
+        ax.axhline(upper, color='red', linestyle='--', linewidth=1)
+        ax.axhline(centro, color='green', linestyle=':', linewidth=1, alpha=0.6, label='centro range')
+        ax.scatter(xs, ys, c=colors, zorder=3, edgecolors='black', linewidths=0.5)
+        margin = (upper - lower) * 0.1
+        ax.set_ylim(lower - margin, upper + margin)
+        ax.set_ylabel(joint_name.replace('_joint', ''), fontsize=8)
+        ax.grid(True, alpha=0.2)
+
+    axes[0].legend(fontsize=7, loc='upper right')
+    axes[-1].set_xlabel('yaw del candidato (rad)')
+    fig.suptitle('Angoli di giunto per candidato riuscito (tratteggio = limiti, oro = scelto)')
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    print(f"Grafico giunti-vs-candidati salvato in {output_path}")
 
 
 def main():
