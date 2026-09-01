@@ -628,7 +628,13 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
     sia effettivamente quella giusta per il robot vero.
     """
     migliore = None
-    migliore_costo = -5
+    # -inf, non un numero a caso: calcola_distanza_limiti restituisce sempre
+    # <= 0 (0 = giunti perfettamente centrati, sempre piu' negativo verso i
+    # limiti), quindi -inf garantisce che il primo candidato riuscito venga
+    # sempre registrato come "il migliore finora", qualunque sia il suo
+    # costo -- anche nel caso limite (raro ma possibile) in cui TUTTI i
+    # candidati riusciti abbiano giunti molto vicini ai limiti.
+    migliore_costo = -float('inf')
     migliore_indice = None
 
     # Punti della circonferenza calcolati tutti in anticipo (stesso raggio,
