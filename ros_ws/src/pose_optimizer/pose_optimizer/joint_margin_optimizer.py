@@ -772,7 +772,7 @@ def main():
 
     # --- Sweep dello yaw (solo pianificazione, partenza dallo stato vero) ---
     raggio_sweep = 0.05
-    migliore = trova_yaw_ottimale(node, position=posizione_target, n_campioni=10, raggio=raggio_sweep)
+    migliore = trova_yaw_ottimale(node, position=posizione_target, n_campioni=20, raggio=raggio_sweep)
 
     if migliore:
         yaw, joint_names, positions = migliore
