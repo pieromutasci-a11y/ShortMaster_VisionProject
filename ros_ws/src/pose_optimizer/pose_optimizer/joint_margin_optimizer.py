@@ -1,3 +1,4 @@
+import os
 import time
 
 import rclpy
@@ -193,6 +194,11 @@ JOINT_LIMITS = {
     'arm_left_6_joint': (-1.885, 3.002),
     'arm_left_7_joint': (-2.443, 2.443),
 }
+
+# Dentro l'albero SORGENTE del pacchetto, non nella copia installata (che
+# viene rigenerata ad ogni build e perderebbe i grafici) -- stessa
+# convenzione gia' usata in vision_pipeline per data//models/.
+JOINT_MARGIN_RESULTS_DIR = '/home/user/ros_workspace/src/pose_optimizer/joint_margin_results'
 
 
 def topic_slug(class_name):
@@ -714,7 +720,7 @@ def calcola_distanza_limiti(joint_names, positions):
 
 
 def plot_candidati_giunti(candidati_riusciti, migliore_indice_globale,
-                           output_path='/tmp/joint_margin_candidates.png'):
+                           output_path=None):
     """
     Per ogni candidato RIUSCITO (raggiungibile e senza collisioni), disegna
     i suoi 7 angoli di giunto confrontati con i rispettivi limiti -- un
@@ -729,6 +735,10 @@ def plot_candidati_giunti(candidati_riusciti, migliore_indice_globale,
     if not candidati_riusciti:
         print("Nessun candidato riuscito, niente da plottare.")
         return
+
+    if output_path is None:
+        os.makedirs(JOINT_MARGIN_RESULTS_DIR, exist_ok=True)
+        output_path = os.path.join(JOINT_MARGIN_RESULTS_DIR, 'joint_margin_candidates.png')
 
     import matplotlib
     matplotlib.use('Agg')  # nodo headless, nessun display
