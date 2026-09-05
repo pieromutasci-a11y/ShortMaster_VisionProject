@@ -20,6 +20,8 @@ import numpy as np
 import PyKDL
 from urdf_parser_py.urdf import URDF
 
+import tf2_ros
+
 
 # Real Time Factor osservato della simulazione in questa macchina: gira a
 # circa 0.4x rispetto al tempo reale (CPU quasi satura, YOLO su CPU pesa
@@ -229,6 +231,11 @@ class MoveGroupClient(Node):
         )
         self._obstacle_markers = {}
         self.create_timer(1.0, self._republish_obstacle_markers)
+
+        # Per leggere la posa VERA (non quella comandata) dell'end effector
+        # dopo l'esecuzione reale -- vedi leggi_posa_end_effector_reale.
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # --- Catena KDL per lo Jacobiano (vedi calcola_manipolabilita) ---
         # /robot_description e' pubblicato da robot_state_publisher con QoS
@@ -879,6 +886,84 @@ def plot_candidati_manipolabilita(candidati_riusciti, migliore_indice_globale,
     print(f"Grafico manipolabilita'-vs-candidati salvato in {output_path}")
 
 
+def leggi_posa_end_effector_reale(node, link_name="gripper_left_grasping_link",
+                                   frame_id="base_footprint", timeout_sec=5.0):
+    """
+    Legge da TF la posa VERA (non quella comandata) di 'link_name' rispetto
+    a 'frame_id', DOPO l'esecuzione reale -- e' la posa che robot_state_publisher
+    calcola dai giunti reali (letti da /joint_states), quindi tiene conto
+    anche del piccolo scarto entro tolleranza tra target comandato e target
+    davvero raggiunto (vedi OrientationConstraint/PositionConstraint in
+    send_goal). Nessuna cinematica diretta da ricalcolare: TF la fa gia'.
+
+    Restituisce (x, y, z, roll, pitch, yaw) in metri/radianti, o None se la
+    TF non arriva in tempo.
+    """
+    deadline = time.time() + timeout_sec
+    messaggio_errore = "timeout"
+    while time.time() < deadline:
+        try:
+            transform = node.tf_buffer.lookup_transform(frame_id, link_name, rclpy.time.Time())
+            t = transform.transform.translation
+            q = transform.transform.rotation
+            roll, pitch, yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')
+            return (t.x, t.y, t.z, roll, pitch, yaw)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException) as errore:
+            messaggio_errore = str(errore)
+            rclpy.spin_once(node, timeout_sec=0.2)
+    node.get_logger().error(f"TF {frame_id} <- {link_name} non arrivata in tempo: {messaggio_errore}")
+    return None
+
+
+def plot_posa_end_effector(node, output_path=None):
+    """
+    x, y, z, roll, pitch, yaw della posa OTTIMA effettivamente raggiunta
+    dall'end effector -- non il target comandato (quello lo conosciamo gia'
+    per costruzione), ma la posa VERA dopo l'esecuzione, letta da TF (vedi
+    leggi_posa_end_effector_reale). Stessa funzione di joint_margin_optimizer,
+    duplicata qui apposta (nessun codice condiviso tra i due nodi).
+    """
+    posa = leggi_posa_end_effector_reale(node)
+    if posa is None:
+        print("Impossibile leggere la posa reale dell'end effector, nessun grafico.")
+        return
+    x, y, z, roll, pitch, yaw = posa
+    print(
+        f"Posa reale end effector (dopo l'esecuzione): "
+        f"x={x:.4f} y={y:.4f} z={z:.4f} m -- roll={roll:.4f} pitch={pitch:.4f} yaw={yaw:.4f} rad"
+    )
+
+    if output_path is None:
+        os.makedirs(MANIPULABILITY_RESULTS_DIR, exist_ok=True)
+        output_path = os.path.join(MANIPULABILITY_RESULTS_DIR, 'optimal_end_effector_pose.png')
+
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    fig, (ax_pos, ax_rot) = plt.subplots(1, 2, figsize=(9, 4.5))
+
+    ax_pos.bar(['x', 'y', 'z'], [x, y, z], color='tab:blue')
+    ax_pos.axhline(0, color='black', linewidth=0.8)
+    ax_pos.set_ylabel('metri')
+    ax_pos.set_title('Posizione (base_footprint)')
+    ax_pos.grid(True, alpha=0.2)
+
+    gradi = np.degrees([roll, pitch, yaw])
+    ax_rot.bar(['roll', 'pitch', 'yaw'], gradi, color='tab:orange')
+    ax_rot.axhline(0, color='black', linewidth=0.8)
+    ax_rot.set_ylabel('gradi')
+    ax_rot.set_title('Orientamento (base_footprint)')
+    ax_rot.grid(True, alpha=0.2)
+
+    fig.suptitle("Posa REALE dell'end effector, candidato ottimo (dopo l'esecuzione)")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    print(f"Grafico posa end effector salvato in {output_path}")
+
+
 def main():
     rclpy.init()
     node = MoveGroupClient()
@@ -947,6 +1032,7 @@ def main():
 
         if risultato and risultato.result.error_code.val == 1:
             print("Esecuzione completata con successo.")
+            plot_posa_end_effector(node)
         else:
             codice = risultato.result.error_code.val if risultato else "nessuna risposta"
             print(f"Esecuzione fallita (error_code={codice}).")
