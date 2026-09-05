@@ -107,6 +107,22 @@ KDL_TIP_LINK = 'gripper_left_grasping_link'
 # joint_margin_optimizer per i suoi risultati.
 MANIPULABILITY_RESULTS_DIR = '/home/user/ros_workspace/src/pose_optimizer/manipulability_results'
 
+# Limiti reali del braccio sinistro, presi dall'URDF (rad) -- QUI servono
+# solo come riferimento visivo nel grafico dei giunti (plot_candidati_giunti),
+# non per il criterio di scelta (quello e' calcola_manipolabilita, non ha
+# niente a che vedere con i limiti di giunto -- una configurazione puo'
+# avere giunti ben centrati ed essere comunque vicina a una singolarita',
+# es. gomito quasi disteso).
+JOINT_LIMITS = {
+    'arm_left_1_joint': (-0.524, 4.712),
+    'arm_left_2_joint': (-2.443, 1.134),
+    'arm_left_3_joint': (-2.618, 2.618),
+    'arm_left_4_joint': (-2.443, 1.134),
+    'arm_left_5_joint': (-3.665, 1.571),
+    'arm_left_6_joint': (-1.885, 3.002),
+    'arm_left_7_joint': (-2.443, 2.443),
+}
+
 
 def topic_slug(class_name):
     """'coke can' -> 'coke_can'. Deve restare identica a quella in center_computation_all.py."""
@@ -604,8 +620,62 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
         node.publish_candidates_markers(candidati)
 
     plot_candidati_manipolabilita(candidati_riusciti, migliore_indice)
+    plot_candidati_giunti(candidati_riusciti, migliore_indice)
 
     return migliore
+
+
+def plot_candidati_giunti(candidati_riusciti, migliore_indice_globale, output_path=None):
+    """
+    Come plot_candidati_manipolabilita, ma i 7 angoli di giunto di ogni
+    candidato riuscito (stesso stile del grafico di joint_margin_optimizer)
+    invece dell'indice di manipolabilita' -- utile per correlare visivamente
+    una bassa manipolabilita' con giunti specifici vicini a configurazioni
+    "estese" (es. gomito quasi disteso, il caso classico di singolarita').
+    I limiti (JOINT_LIMITS) sono disegnati solo come riferimento: qui NON
+    sono il criterio di scelta (quello resta la manipolabilita').
+    """
+    if not candidati_riusciti:
+        return
+
+    if output_path is None:
+        os.makedirs(MANIPULABILITY_RESULTS_DIR, exist_ok=True)
+        output_path = os.path.join(MANIPULABILITY_RESULTS_DIR, 'manipulability_joint_values.png')
+
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    joint_order = list(JOINT_LIMITS.keys())
+    fig, axes = plt.subplots(len(joint_order), 1, figsize=(9, 2.0 * len(joint_order)), sharex=True)
+
+    for ax, joint_name in zip(axes, joint_order):
+        lower, upper = JOINT_LIMITS[joint_name]
+        centro = (lower + upper) / 2
+
+        xs, ys, colors = [], [], []
+        for c in candidati_riusciti:
+            idx = c['joint_names'].index(joint_name)
+            xs.append(c['yaw'])
+            ys.append(c['positions'][idx])
+            colors.append('gold' if c['indice_globale'] == migliore_indice_globale else 'tab:blue')
+
+        ax.axhline(lower, color='red', linestyle='--', linewidth=1, label='limite')
+        ax.axhline(upper, color='red', linestyle='--', linewidth=1)
+        ax.axhline(centro, color='green', linestyle=':', linewidth=1, alpha=0.6, label='centro range')
+        ax.scatter(xs, ys, c=colors, zorder=3, edgecolors='black', linewidths=0.5)
+        margin = (upper - lower) * 0.1
+        ax.set_ylim(lower - margin, upper + margin)
+        ax.set_ylabel(joint_name.replace('_joint', ''), fontsize=8)
+        ax.grid(True, alpha=0.2)
+
+    axes[0].legend(fontsize=7, loc='upper right')
+    axes[-1].set_xlabel('yaw del candidato (rad)')
+    fig.suptitle('Angoli di giunto per candidato riuscito (solo riferimento -- il criterio qui e\' la manipolabilita\')')
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    print(f"Grafico giunti-vs-candidati salvato in {output_path}")
 
 
 def plot_candidati_manipolabilita(candidati_riusciti, migliore_indice_globale,
