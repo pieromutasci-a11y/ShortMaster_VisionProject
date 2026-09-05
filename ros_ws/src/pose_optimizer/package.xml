@@ -23,6 +23,11 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>tiago_pro_moveit_config</exec_depend>
   <exec_depend>pick_ik</exec_depend>
+  <!-- manipulability_optimizer: Jacobiano via KDL, catena costruita dall'URDF vero -->
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>python_orocos_kdl</exec_depend>
+  <exec_depend>kdl_parser_py</exec_depend>
+  <exec_depend>urdfdom_py</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

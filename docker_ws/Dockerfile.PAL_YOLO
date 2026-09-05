@@ -7,6 +7,9 @@ RUN sudo apt-get update && sudo apt-get install -y \
     ros-humble-cv-bridge \
     python3-opencv \
     ros-humble-teleop-twist-keyboard \
+    ros-humble-python-orocos-kdl \
+    ros-humble-kdl-parser-py \
+    ros-humble-urdfdom-py \
     && sudo rm -rf /var/lib/apt/lists/*
 
 # Installiamo la libreria di YOLOv8 e le dipendenze usate dagli script del

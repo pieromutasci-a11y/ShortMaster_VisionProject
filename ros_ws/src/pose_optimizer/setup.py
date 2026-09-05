@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'joint_margin_optimizer = pose_optimizer.joint_margin_optimizer:main',
+            'manipulability_optimizer = pose_optimizer.manipulability_optimizer:main',
         ],
     },
 )
