@@ -19,6 +19,8 @@
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-scipy</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>
+  <!-- joint_margin_optimizer: legge la posa reale dell'end effector via TF -->
+  <exec_depend>tf2_ros</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>tiago_pro_moveit_config</exec_depend>

@@ -691,6 +691,8 @@ def trova_yaw_ottimale(node, position, n_campioni, raggio=0.05):
 
     plot_candidati_manipolabilita(candidati_riusciti, migliore_indice)
     plot_candidati_giunti(candidati_riusciti, migliore_indice)
+    if migliore is not None:
+        plot_ellissoide_manipolabilita(node, migliore[1], migliore[2])
 
     return migliore
 
@@ -746,6 +748,96 @@ def plot_candidati_giunti(candidati_riusciti, migliore_indice_globale, output_pa
     fig.savefig(output_path, dpi=120)
     plt.close(fig)
     print(f"Grafico giunti-vs-candidati salvato in {output_path}")
+
+
+def plot_ellissoide_manipolabilita(node, joint_names, positions, output_path=None):
+    """
+    Disegna l'ellissoide di manipolabilita' (solo la parte lineare/
+    traslazionale, le 3 righe in alto dello Jacobiano -- la parte
+    rotazionale esisterebbe anche lei ma non e' facilmente visualizzabile
+    insieme a quella lineare in un solo disegno 3D) del candidato SCELTO
+    (non di tutti i candidati -- serve solo per quello finale).
+
+    Costruzione standard: gli assi dell'ellissoide sono gli autovettori di
+    Jv @ Jv^T (Jv = parte lineare dello Jacobiano), le loro lunghezze sono
+    le radici quadrate dei rispettivi autovalori -- direzioni in cui
+    l'end effector puo' muoversi con piu' o meno "facilita'" a parita' di
+    velocita' di giunto. Centrato sulla posizione VERA dell'end effector in
+    quella configurazione, calcolata con la cinematica diretta (KDL) --
+    non la posizione target comandata, quella raggiunta per davvero.
+    """
+    node.build_kdl_chain()
+
+    nome_a_valore = dict(zip(joint_names, positions))
+    valori = [nome_a_valore[nome] for nome in node._kdl_chain_joint_names]
+    q = PyKDL.JntArray(len(valori))
+    for i, v in enumerate(valori):
+        q[i] = v
+
+    jacobiano = PyKDL.Jacobian(node._kdl_chain.getNrOfJoints())
+    node._kdl_jac_solver.JntToJac(q, jacobiano)
+    J = np.array([[jacobiano[r, c] for c in range(jacobiano.columns())]
+                  for r in range(jacobiano.rows())])
+    Jv = J[:3, :]  # parte lineare (traslazionale) dello Jacobiano
+
+    fk_solver = PyKDL.ChainFkSolverPos_recursive(node._kdl_chain)
+    frame_end_effector = PyKDL.Frame()
+    fk_solver.JntToCart(q, frame_end_effector)
+    centro = np.array([frame_end_effector.p.x(), frame_end_effector.p.y(), frame_end_effector.p.z()])
+
+    autovalori, autovettori = np.linalg.eigh(Jv @ Jv.T)  # simmetrica, eigh e' la scelta giusta e stabile
+    autovalori = np.clip(autovalori, 0.0, None)  # arrotondamenti numerici potrebbero dare valori leggermente < 0
+    semiassi = np.sqrt(autovalori)
+
+    if output_path is None:
+        os.makedirs(MANIPULABILITY_RESULTS_DIR, exist_ok=True)
+        output_path = os.path.join(MANIPULABILITY_RESULTS_DIR, 'manipulability_ellipsoid.png')
+
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 -- registra la proiezione 3d
+
+    # Sfera unitaria campionata, poi deformata negli assi/lunghezze
+    # dell'ellissoide (autovettori/autovalori) e traslata sul vero
+    # end effector.
+    u = np.linspace(0, 2 * np.pi, 40)
+    v = np.linspace(0, np.pi, 30)
+    sfera_x = np.outer(np.cos(u), np.sin(v))
+    sfera_y = np.outer(np.sin(u), np.sin(v))
+    sfera_z = np.outer(np.ones_like(u), np.cos(v))
+    punti_sfera = np.stack([sfera_x.ravel(), sfera_y.ravel(), sfera_z.ravel()])
+    punti_ellissoide = autovettori @ np.diag(semiassi) @ punti_sfera
+    ell_x = (punti_ellissoide[0] + centro[0]).reshape(sfera_x.shape)
+    ell_y = (punti_ellissoide[1] + centro[1]).reshape(sfera_y.shape)
+    ell_z = (punti_ellissoide[2] + centro[2]).reshape(sfera_z.shape)
+
+    fig = plt.figure(figsize=(7, 7))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(ell_x, ell_y, ell_z, color='tab:blue', alpha=0.5, edgecolor='none')
+    ax.scatter(*centro, color='gold', s=60, zorder=5, label='end effector (candidato scelto)')
+
+    raggio_max = max(semiassi.max(), 1e-3) * 1.3
+    ax.set_xlim(centro[0] - raggio_max, centro[0] + raggio_max)
+    ax.set_ylim(centro[1] - raggio_max, centro[1] + raggio_max)
+    ax.set_zlim(centro[2] - raggio_max, centro[2] + raggio_max)
+    try:
+        ax.set_box_aspect([1, 1, 1])  # assi in scala 1:1:1, altrimenti l'ellissoide appare distorto
+    except AttributeError:
+        pass  # versioni vecchie di matplotlib senza set_box_aspect -- non blocca il resto
+
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_zlabel('z (m)')
+    ax.set_title(
+        "Ellissoide di manipolabilita' (parte lineare) -- candidato scelto\n"
+        f"semiassi: {semiassi[0]:.4f}, {semiassi[1]:.4f}, {semiassi[2]:.4f} m"
+    )
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    print(f"Ellissoide di manipolabilita' salvato in {output_path}")
 
 
 def plot_candidati_manipolabilita(candidati_riusciti, migliore_indice_globale,
