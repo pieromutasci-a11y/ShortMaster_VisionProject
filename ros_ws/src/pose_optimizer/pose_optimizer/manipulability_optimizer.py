@@ -19,7 +19,6 @@ import numpy as np
 
 import PyKDL
 from urdf_parser_py.urdf import URDF
-from kdl_parser_py.urdf import treeFromUrdfModel
 
 
 # Real Time Factor osservato della simulazione in questa macchina: gira a
@@ -129,6 +128,89 @@ def topic_slug(class_name):
     return class_name.replace(' ', '_')
 
 
+# --- Costruzione della catena KDL dall'URDF, fatta a mano ---
+#
+# Il pacchetto che normalmente farebbe questo lavoro (kdl_parser_py) non
+# esiste per ROS2 Humble (verificato: solo la libreria C++ e' pubblicata,
+# ros-humble-kdl-parser, senza binding Python) -- quindi costruiamo la
+# catena da soli, con la stessa matematica standard che userebbe quel
+# pacchetto: non e' un'invenzione, e' la conversione URDF -> KDL descritta
+# nella documentazione di Orocos KDL.
+#
+# Per ogni joint lungo il percorso: l'origine URDF (xyz, rpy) diventa una
+# PyKDL.Frame ("F_parent_jnt", la posa del giunto rispetto al link
+# genitore). Il PyKDL.Joint si costruisce con quella stessa origine e con
+# l'asse di rotazione/traslazione (ruotato nell'orientamento di
+# F_parent_jnt) -- e la STESSA F_parent_jnt va anche passata come "tip
+# frame" del Segment: puo' sembrare un doppio conteggio, ma non lo e' --
+# PyKDL.Joint(origin, axis, ...) definisce il moto del giunto come una
+# rotazione/traslazione attorno a un asse che passa per "origin" (non
+# attorno all'origine del segmento), quindi la composizione
+# joint.pose(q) * F_parent_jnt si semplifica esattamente in
+# "F_parent_jnt seguita da una rotazione/traslazione pura attorno
+# all'asse locale" -- cioe' la cinematica vera descritta dall'URDF.
+def _kdl_frame_from_urdf_origin(origin):
+    if origin is None:
+        return PyKDL.Frame.Identity()
+    xyz = origin.xyz if origin.xyz is not None else [0.0, 0.0, 0.0]
+    rpy = origin.rpy if origin.rpy is not None else [0.0, 0.0, 0.0]
+    return PyKDL.Frame(PyKDL.Rotation.RPY(*rpy), PyKDL.Vector(*xyz))
+
+
+def _trova_catena_joint_urdf(robot, base_link, tip_link):
+    """Risale da tip_link a base_link seguendo i genitori (l'URDF e' un
+    albero: ogni link non-radice ha esattamente un joint genitore), e
+    restituisce i joint attraversati in ordine base -> tip."""
+    child_to_joint = {joint.child: joint for joint in robot.joints}
+    joints_al_contrario = []
+    corrente = tip_link
+    while corrente != base_link:
+        joint = child_to_joint.get(corrente)
+        if joint is None:
+            raise RuntimeError(
+                f"Risalendo da '{tip_link}' non si arriva a '{base_link}': "
+                f"nessun joint genitore per '{corrente}' -- controlla "
+                f"KDL_BASE_LINK/KDL_TIP_LINK (nomi presi da tiago_pro.urdf.xacro)."
+            )
+        joints_al_contrario.append(joint)
+        corrente = joint.parent
+    joints_al_contrario.reverse()
+    return joints_al_contrario
+
+
+def costruisci_catena_kdl(robot_description_xml, base_link, tip_link):
+    """
+    Restituisce (chain, nomi_giunti_attuati): la catena PyKDL da base_link a
+    tip_link e i nomi dei suoi giunti NON fissi, nello stesso ordine con cui
+    la catena li vuole nel JntArray -- da usare per rimappare
+    (joint_names, positions) di MoveIt (che potrebbero avere un ordine
+    diverso) prima di calcolare lo Jacobiano.
+    """
+    robot = URDF.from_xml_string(robot_description_xml)
+    chain = PyKDL.Chain()
+    nomi_giunti_attuati = []
+
+    for joint in _trova_catena_joint_urdf(robot, base_link, tip_link):
+        f_parent_jnt = _kdl_frame_from_urdf_origin(joint.origin)
+
+        if joint.type == 'fixed':
+            kdl_joint = PyKDL.Joint(joint.name, PyKDL.Joint.Fixed)
+        else:
+            axis_xyz = joint.axis if joint.axis is not None else [0.0, 0.0, 1.0]
+            asse_nel_genitore = f_parent_jnt.M * PyKDL.Vector(*axis_xyz)
+            if joint.type in ('revolute', 'continuous'):
+                kdl_joint = PyKDL.Joint(joint.name, f_parent_jnt.p, asse_nel_genitore, PyKDL.Joint.RotAxis)
+            elif joint.type == 'prismatic':
+                kdl_joint = PyKDL.Joint(joint.name, f_parent_jnt.p, asse_nel_genitore, PyKDL.Joint.TransAxis)
+            else:
+                raise RuntimeError(f"Tipo di joint non gestito: '{joint.type}' ({joint.name})")
+            nomi_giunti_attuati.append(joint.name)
+
+        chain.addSegment(PyKDL.Segment(joint.child, kdl_joint, f_parent_jnt))
+
+    return chain, nomi_giunti_attuati
+
+
 class MoveGroupClient(Node):
     def __init__(self):
         super().__init__('manipulability_optimizer')
@@ -203,26 +285,14 @@ class MoveGroupClient(Node):
         if self._kdl_chain is not None:
             return  # gia' costruita
 
-        robot = URDF.from_xml_string(self.robot_description_xml)
-        ok, tree = treeFromUrdfModel(robot)
-        if not ok:
-            raise RuntimeError("kdl_parser_py non e' riuscito a costruire l'albero KDL dall'URDF.")
-
-        chain = tree.getChain(KDL_BASE_LINK, KDL_TIP_LINK)
+        chain, chain_joint_names = costruisci_catena_kdl(
+            self.robot_description_xml, KDL_BASE_LINK, KDL_TIP_LINK
+        )
         if chain.getNrOfJoints() == 0:
             raise RuntimeError(
                 f"Catena KDL {KDL_BASE_LINK} -> {KDL_TIP_LINK} vuota -- "
                 f"controlla i nomi dei link (vedi tiago_pro.urdf.xacro)."
             )
-
-        # Nomi dei giunti ATTUATI nella catena, nell'ordine con cui KDL li
-        # vuole nel JntArray -- non assumiamo che coincida con l'ordine di
-        # arm_left_1..7_joint restituito da MoveIt, li rimappiamo per nome.
-        chain_joint_names = []
-        for i in range(chain.getNrOfSegments()):
-            joint = chain.getSegment(i).getJoint()
-            if joint.getType() != PyKDL.Joint.Fixed:
-                chain_joint_names.append(joint.getName())
 
         self._kdl_chain = chain
         self._kdl_chain_joint_names = chain_joint_names
