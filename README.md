@@ -48,10 +48,14 @@ robot per portare il braccio verso l'oggetto:
 - [`detection_and_ranging_occlusion_free`](ros_ws/src/detection_and_ranging_occlusion_free) — rileva
   l'oggetto in tempo reale (YOLOv8) e, fondendo la detection con la depth
   della camera, ne stima la posizione 3D. Multi-oggetto, ma **non** gestisce
-  le occlusioni in modo robusto (da qui il nome) — un tentativo precedente
-  in quella direzione (`detection_and_occlusion_handler.py`, con
-  [`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs) per il fit del
-  cerchio/asse su piu' punti campionati) e' stato rimosso.
+  le occlusioni in modo robusto (da qui il nome).
+- [`detection_and_ranging_occlusion_handler`](ros_ws/src/detection_and_ranging_occlusion_handler) —
+  stessa idea, ma con gestione robusta delle occlusioni tra oggetti
+  tracciati: esclude i pixel condivisi con un oggetto piu' vicino prima di
+  stimare la depth di ciascuno, e campiona piu' punti sulla superficie
+  visibile ([`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs)) per il fit
+  del cerchio/asse a valle. Lavoro in corso — per ora solo il nodo di
+  detection, senza un proprio `center_computation`.
 - [`pose_optimizer`](ros_ws/src/pose_optimizer) — collegato alla posizione
   reale della lattina (target) e di pringles/biscotti (ostacoli), campiona
   piu' angoli di presa attorno all'oggetto e sceglie, tra quelli
@@ -66,10 +70,11 @@ robot per portare il braccio verso l'oggetto:
 docker_ws/                 # immagine Docker (simulazione PAL + dipendenze YOLO)
 ros_ws/                     # workspace ROS2 (colcon)
 └── src/
-    ├── vision_pipeline/                     # dataset + training/eval YOLO + nodi di raccolta dati + launch simulazione
-    ├── detection_and_ranging_occlusion_free/ # detection + stima posizione 3D a runtime (multi-oggetto, senza gestione occlusioni)
-    ├── tiago_vision_msgs/                    # messaggi custom (oggi non usati da nessun nodo -- vedi sopra)
-    ├── pose_optimizer/                       # pianificazione IK/posa per il grasping (MoveIt + KDL, sweep sullo yaw, due criteri)
+    ├── vision_pipeline/                          # dataset + training/eval YOLO + nodi di raccolta dati + launch simulazione
+    ├── detection_and_ranging_occlusion_free/     # detection + stima posizione 3D a runtime (multi-oggetto, senza gestione occlusioni)
+    ├── detection_and_ranging_occlusion_handler/  # come sopra, ma con gestione robusta delle occlusioni (lavoro in corso)
+    ├── tiago_vision_msgs/                        # messaggi custom (usati da detection_and_ranging_occlusion_handler)
+    ├── pose_optimizer/                           # pianificazione IK/posa per il grasping (MoveIt + KDL, sweep sullo yaw, due criteri)
     └── pal_*, tiago_pro_*/                   # pacchetti PAL Robotics per simulazione/robot TIAGo Pro
 ```
 
