@@ -53,9 +53,13 @@ robot per portare il braccio verso l'oggetto:
   stessa idea, ma con gestione robusta delle occlusioni tra oggetti
   tracciati: esclude i pixel condivisi con un oggetto piu' vicino prima di
   stimare la depth di ciascuno, e campiona piu' punti sulla superficie
-  visibile ([`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs)) per il fit
-  del cerchio/asse a valle. Lavoro in corso — per ora solo il nodo di
-  detection, senza un proprio `center_computation`.
+  visibile ([`tiago_vision_msgs`](ros_ws/src/tiago_vision_msgs)); il centro
+  dell'oggetto viene poi ricavato fittando la circonferenza che passa per
+  quei 3 punti (nel piano orizzontale di `base_footprint`) — un raggio
+  misurato, non piu' assunto a priori come nello stack `_occlusion_free`.
+  Pubblica sugli stessi topic richiesti da `pose_optimizer`, quindi i due
+  stack sono intercambiabili. Lavoro in corso — manca ancora un launch
+  file dedicato.
 - [`pose_optimizer`](ros_ws/src/pose_optimizer) — collegato alla posizione
   reale della lattina (target) e di pringles/biscotti (ostacoli), campiona
   piu' angoli di presa attorno all'oggetto e sceglie, tra quelli

@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'rt_object_detection_occlusion_handler = detection_and_ranging_occlusion_handler.rt_object_detection_node_occlusion_handler:main',
+            'center_computation_occlusion_handler = detection_and_ranging_occlusion_handler.center_computation_occlusion_handler:main',
         ],
     },
 )
