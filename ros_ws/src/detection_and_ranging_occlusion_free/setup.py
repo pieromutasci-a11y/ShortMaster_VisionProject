@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import find_packages, setup
 
-package_name = 'detection_and_ranging'
+package_name = 'detection_and_ranging_occlusion_free'
 
 setup(
     name=package_name,
@@ -20,16 +20,13 @@ setup(
     zip_safe=True,
     maintainer='pieromutasci',
     maintainer_email='pieromutasci@gmail.com',
-    description='Real-time YOLO object detection fused with depth to estimate 3D object position.',
+    description='Real-time YOLO object detection fused with depth to estimate 3D object position. Multi-object only (no occlusion handling -- see README).',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'rt_object_detection = detection_and_ranging.rt_object_detection_node:main',
-            'center_computation = detection_and_ranging.center_computation:main',
-            'detection_and_occlusion_handler = detection_and_ranging.detection_and_occlusion_handler:main',
-            'rt_object_detection_all = detection_and_ranging.rt_object_detection_node_all:main',
-            'center_computation_all = detection_and_ranging.center_computation_all:main',
+            'rt_object_detection_all = detection_and_ranging_occlusion_free.rt_object_detection_node_all:main',
+            'center_computation_all = detection_and_ranging_occlusion_free.center_computation_all:main',
         ],
     },
 )

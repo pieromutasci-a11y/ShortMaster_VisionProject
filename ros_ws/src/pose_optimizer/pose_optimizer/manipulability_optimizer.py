@@ -42,7 +42,7 @@ def real_seconds_for(sim_seconds):
 
 
 # Topic del centro dell'oggetto (gia' in base_footprint, pubblicato da
-# detection_and_ranging -- vedi center_computation.py/center_computation_all.py).
+# detection_and_ranging_occlusion_free -- vedi center_computation.py/center_computation_all.py).
 COKE_CENTER_TOPIC = 'cokecan_center_base_footprint'
 TRACKED_CLASSES = ['coke can', 'pringles can', 'biscuits pack']
 OBSTACLE_CLASSES = ['pringles can', 'biscuits pack']
@@ -255,7 +255,7 @@ class MoveGroupClient(Node):
         self._kdl_chain_joint_names = None
         self._kdl_jac_solver = None
 
-        # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
+        # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging_occlusion_free ---
         self.latest_coke_center = None
         self.coke_center_sub = self.create_subscription(
             PointStamped, COKE_CENTER_TOPIC, self._coke_center_callback, 10

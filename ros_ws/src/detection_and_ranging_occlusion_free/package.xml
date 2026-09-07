@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>detection_and_ranging</name>
+  <name>detection_and_ranging_occlusion_free</name>
   <version>0.1.0</version>
   <description>
     Real-time object detection (YOLOv8) fused with depth to estimate the 3D
     position of target objects on the table, as input to pose optimization
-    for grasping.
+    for grasping. Multi-object only, no occlusion-aware handling (see
+    README) -- hence the package name.
   </description>
   <maintainer email="pieromutasci@gmail.com">pieromutasci</maintainer>
   <license>Apache-2.0</license>
@@ -25,8 +26,6 @@
   <exec_depend>visualization_msgs</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>tf2_geometry_msgs</exec_depend>
-  <exec_depend>tiago_vision_msgs</exec_depend>
-  <exec_depend>builtin_interfaces</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

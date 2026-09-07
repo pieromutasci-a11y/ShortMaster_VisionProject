@@ -37,7 +37,7 @@ def real_seconds_for(sim_seconds):
 
 
 # Topic del centro dell'oggetto (gia' in base_footprint, pubblicato da
-# detection_and_ranging -- vedi center_computation.py/center_computation_all.py).
+# detection_and_ranging_occlusion_free -- vedi center_computation.py/center_computation_all.py).
 # Nessuna trasformazione TF necessaria qui: e' il frame in cui lavora gia'
 # tutto questo nodo (target_pose.header.frame_id = "base_footprint").
 
@@ -237,7 +237,7 @@ class MoveGroupClient(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging ---
+        # --- Sottoscrizioni ai centri pubblicati da detection_and_ranging_occlusion_free ---
         # La coca (topic single-object) e' il target; pringles/biscuits
         # (topic multi-oggetto) sono usati come ostacoli in main().
 
@@ -381,7 +381,7 @@ class MoveGroupClient(Node):
             rclpy.spin_once(self, timeout_sec=0.3)
 
         # Asse verticale sul centro ricostruito, stesso stile di quelli che
-        # detection_and_ranging disegna per coca/pringles/biscotti (una
+        # detection_and_ranging_occlusion_free disegna per coca/pringles/biscotti (una
         # linea verticale, non solo un punto) -- qui per il tavolo, il cui
         # "centro" e' ricostruito (vedi sopra), non rilevato direttamente.
         axis_marker = Marker()
@@ -431,7 +431,7 @@ class MoveGroupClient(Node):
         """
         Aggiunge un ostacolo cilindrico verticale alla planning scene, nel
         punto (gia' corretto, gia' in base_footprint) pubblicato da
-        detection_and_ranging. Un cilindro e' la forma giusta qui: sia
+        detection_and_ranging_occlusion_free. Un cilindro e' la forma giusta qui: sia
         pringles che biscuits pack sono modellati come cilindri anche in
         Gazebo (vedi OBSTACLE_DIMENSIONS), e il centro che riceviamo e' gia'
         sull'asse verticale dell'oggetto -- lo stesso ragionamento geometrico

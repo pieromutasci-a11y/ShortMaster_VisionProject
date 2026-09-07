@@ -2,16 +2,12 @@
 simulazione Gazebo del TIAGo Pro + nodi di detection/ranging e center
 computation su tutte le classi + RViz con la vista multi-oggetto.
 
-Gemello di full_stack.launch.py, che avvia invece la versione single-object
-(solo 'coke can'). I topic dei due stack sono distinti, quindi si possono
-lanciare entrambi insieme se serve confrontarli.
-
 Uso:
-  ros2 launch detection_and_ranging full_stack_all.launch.py
+  ros2 launch detection_and_ranging_occlusion_free full_stack_all.launch.py
   # se la simulazione e' gia' avviata altrove:
-  ros2 launch detection_and_ranging full_stack_all.launch.py launch_simulation:=false
+  ros2 launch detection_and_ranging_occlusion_free full_stack_all.launch.py launch_simulation:=false
   # senza RViz:
-  ros2 launch detection_and_ranging full_stack_all.launch.py rviz:=false
+  ros2 launch detection_and_ranging_occlusion_free full_stack_all.launch.py rviz:=false
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
@@ -36,7 +32,7 @@ def generate_launch_description():
     rviz_config_arg = DeclareLaunchArgument(
         'rviz_config',
         default_value=PathJoinSubstitution([
-            FindPackageShare('detection_and_ranging'),
+            FindPackageShare('detection_and_ranging_occlusion_free'),
             'rviz', 'complete_visualization_all.rviz',
         ]),
         description='File di configurazione RViz da usare.',
@@ -52,14 +48,14 @@ def generate_launch_description():
     )
 
     detection_node = Node(
-        package='detection_and_ranging',
+        package='detection_and_ranging_occlusion_free',
         executable='rt_object_detection_all',
         name='rt_object_detection_all_node',
         output='screen',
     )
 
     center_computation_node = Node(
-        package='detection_and_ranging',
+        package='detection_and_ranging_occlusion_free',
         executable='center_computation_all',
         name='center_computation_all_node',
         output='screen',

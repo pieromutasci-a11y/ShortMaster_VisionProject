@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer='pieromutasci',
     maintainer_email='pieromutasci@gmail.com',
-    description='IK pose optimization nodes (MoveIt + KDL) for grasping targets detected by detection_and_ranging. Ogni nodo prende il nome dal criterio di scelta tra i candidati che ottimizza.',
+    description='IK pose optimization nodes (MoveIt + KDL) for grasping targets detected by detection_and_ranging_occlusion_free. Ogni nodo prende il nome dal criterio di scelta tra i candidati che ottimizza.',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
