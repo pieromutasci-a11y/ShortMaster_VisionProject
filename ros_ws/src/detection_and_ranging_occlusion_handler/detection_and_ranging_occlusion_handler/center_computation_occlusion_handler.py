@@ -41,24 +41,39 @@ senso solo con piu' di 3 punti.
 
 Quando i 3 punti sono troppo allineati (determinante ~0), il centro non e'
 calcolabile in modo affidabile -- un piccolo rumore sposterebbe il
-risultato di molto. Succede in due casi:
+risultato di molto. Succede in almeno due casi:
   1. rt_object_detection_node_occlusion_handler.py non ha trovato nessuna
      riga abbastanza larga (select_grasp_circle_points -> None) e ha
      ripiegato pubblicando lo STESSO punto ripetuto 3 volte -- 3 punti
      coincidenti sono il caso degenere per definizione.
-  2. 'biscuits pack' e' una SCATOLA, non un cilindro: sulla sua faccia
-     piatta la depth lungo una riga resta ~costante mentre cambia solo la
-     colonna, quindi i 3 punti sono quasi allineati anche quando la
-     detection e' buona -- per questa classe il caso degenere e' la norma,
-     non un'eccezione rara.
+  2. Un oggetto molto occluso da un altro piu' vicino (test: biscotti
+     davanti alla coca al ~60%) lascia visibile solo un arco stretto della
+     circonferenza -- i 3 punti campionati su quell'arco sono vicini e
+     quasi allineati anche quando presi correttamente (non e' un bug nella
+     scelta dei punti, e' la geometria: un arco stretto NON contiene
+     abbastanza informazione per stimare in modo stabile un cerchio molto
+     piu' grande dell'arco stesso).
+
+NOTA: 'biscuits pack' in QUESTO modello Gazebo e' in realta' un cilindro
+(radius 0.029), non una scatola come inizialmente assunto -- il fit
+funziona per questa classe quanto per le altre due, non e' un caso
+degenere strutturale.
+
+Il controllo sull'area del triangolo (MIN_TRIANGLE_AREA_M2) intercetta
+solo il caso 1 (area davvero ~0). Nel caso 2 l'area puo' essere piccola ma
+non nulla -- il triangolo passa il controllo, ma il centro calcolato puo'
+comunque essere molto lontano da quello vero (fit mal condizionato: punti
+quasi allineati amplificano il rumore). Per questo c'e' un secondo
+controllo, sul RAGGIO misurato (vedi RADIUS_SANITY_FACTOR): un raggio
+molto diverso dal nominale della classe e' il sintomo di un fit
+inaffidabile anche quando l'area non lo segnala.
 
 Scelta fatta (vedi conversazione): niente fallback a raggio noto -- il
-frame viene scartato, coerente con la filosofia gia' in uso altrove nel
-progetto (MIN_VALID_PIXELS, MIN_ORDERING_COVERAGE_RATIO, ...): meglio
-nessun dato che un dato inventato. Conseguenza pratica da tenere a mente:
-per 'biscuits pack' questo nodo pubblichera' un centro solo di rado (nei
-frame in cui, per l'angolazione, la faccia inquadrata non e' del tutto
-frontale e la depth lungo la riga varia abbastanza).
+frame viene scartato in entrambi i casi, coerente con la filosofia gia'
+in uso altrove nel progetto (MIN_VALID_PIXELS, MIN_ORDERING_COVERAGE_RATIO,
+...): meglio nessun dato che un dato inventato. Conseguenza pratica da
+tenere a mente: un oggetto molto occluso pubblichera' un centro solo nei
+frame in cui l'arco visibile e' abbastanza ampio da dare un fit stabile.
 
 --- Topic: identici a center_computation_all.py, di proposito ---
 
@@ -83,18 +98,21 @@ from tiago_vision_msgs.msg import TrackedObjectsArray
 
 # Raggio nominale per classe (stesso valore di center_computation_all.py),
 # usato QUI solo come riferimento per il sanity-check sul raggio misurato
-# (log di warning se troppo diverso), non come input del calcolo del
-# centro -- a differenza dello stack senza gestione occlusioni.
+# (vedi RADIUS_SANITY_FACTOR: scarta il frame se troppo diverso), non come
+# input del calcolo del centro -- a differenza dello stack senza gestione
+# occlusioni.
 RADIUS_BY_CLASS = {
     'coke can':      0.04,
     'pringles can':  0.04,
-    'biscuits pack': 0.03,   # scatola: il fit sara' quasi sempre degenere, vedi sopra
+    'biscuits pack': 0.029,   # cilindro anche questo in questo modello Gazebo, vedi sopra
 }
 
 # Quanto puo' discostarsi il raggio MISURATO (dal fit) da quello nominale
-# prima di loggare un warning -- puramente diagnostico, non blocca la
-# pubblicazione. Fattore moltiplicativo (es. 2.0 = warning se il raggio
-# misurato e' piu' del doppio o meno della meta' del nominale).
+# prima di scartare il frame come inaffidabile. Fattore moltiplicativo
+# (es. 2.0 = scarta se il raggio misurato e' piu' del doppio o meno della
+# meta' del nominale). Intercetta il fit mal condizionato (punti quasi
+# allineati su un arco stretto, tipicamente per occlusione severa) che
+# MIN_TRIANGLE_AREA_M2 da solo non cattura -- vedi il caso 2 sopra.
 # TODO: calibrare empiricamente.
 RADIUS_SANITY_FACTOR = 2.0
 
@@ -260,16 +278,24 @@ class CenterComputationOcclusionHandlerNode(Node):
 
         cz = sum(p.z for p in points_in_target) / 3.0
 
-        # Sanity-check puramente diagnostico: il raggio misurato quanto si
-        # discosta dal nominale della classe? Non blocca la pubblicazione.
+        # Secondo controllo di affidabilita' (oltre all'area del
+        # triangolo): il raggio misurato quanto si discosta dal nominale
+        # della classe? Un'area non nulla non basta a garantire un fit
+        # buono -- su un arco stretto (oggetto molto occluso) i 3 punti
+        # possono passare il controllo sull'area e comunque dare un centro
+        # molto lontano da quello vero (fit mal condizionato). Se il
+        # raggio misurato e' implausibile, il frame viene scartato come
+        # per il caso di area quasi nulla -- stessa filosofia.
         measured_radius = math.hypot(xy_points[0][0] - cx, xy_points[0][1] - cy)
         nominal_radius = RADIUS_BY_CLASS[class_name]
         if not (nominal_radius / RADIUS_SANITY_FACTOR <= measured_radius <= nominal_radius * RADIUS_SANITY_FACTOR):
             self.get_logger().warn(
                 f'[{class_name}] Raggio misurato ({measured_radius:.3f} m) molto diverso '
-                f'dal nominale ({nominal_radius:.3f} m) -- fit sospetto.',
+                f'dal nominale ({nominal_radius:.3f} m) -- fit inaffidabile (probabile arco '
+                f'visibile troppo stretto), salto il frame.',
                 throttle_duration_sec=5.0
             )
+            return
 
         center_in_target = PointStamped()
         center_in_target.header.frame_id = TARGET_FRAME
