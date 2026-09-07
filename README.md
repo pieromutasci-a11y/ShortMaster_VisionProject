@@ -58,8 +58,7 @@ robot per portare il braccio verso l'oggetto:
   quei 3 punti (nel piano orizzontale di `base_footprint`) — un raggio
   misurato, non piu' assunto a priori come nello stack `_occlusion_free`.
   Pubblica sugli stessi topic richiesti da `pose_optimizer`, quindi i due
-  stack sono intercambiabili. Lavoro in corso — manca ancora un launch
-  file dedicato.
+  stack sono intercambiabili. Lavoro in corso.
 - [`pose_optimizer`](ros_ws/src/pose_optimizer) — collegato alla posizione
   reale della lattina (target) e di pringles/biscotti (ostacoli), campiona
   piu' angoli di presa attorno all'oggetto e sceglie, tra quelli
