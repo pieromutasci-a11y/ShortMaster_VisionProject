@@ -160,7 +160,9 @@ MIN_COVERAGE_RATIO = 0.15
 
 # TODO: parameterise this (e.g. via a ROS 2 node parameter or a package-relative
 # path) so the node isn't tied to one machine's filesystem layout.
-MODEL_WEIGHTS_PATH = "/home/user/exchange/models/weights/best2.pt"
+# Stesso modello (stesso run W&B) usato da rt_object_detection_node_all.py
+# nello stack senza gestione occlusioni -- vedi quel file per la stessa costante.
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
 
 
 class RtObjectDetectionNode(Node):
