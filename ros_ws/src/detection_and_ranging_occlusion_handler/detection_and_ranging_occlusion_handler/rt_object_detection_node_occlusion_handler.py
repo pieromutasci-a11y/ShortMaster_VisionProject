@@ -599,12 +599,25 @@ class RtObjectDetectionNode(Node):
         Starts at (start_row_local, start_col_local) — the Step 8
         representative point, already guaranteed on-object — and walks
         outward left/right to the genuine boundaries (see
-        walk_to_genuine_boundary), then backs off GRASP_POINT_BACKOFF_PIXELS
-        from each boundary to avoid the single riskiest edge pixel while
-        keeping most of the spread a stable circle fit needs. The middle
-        point is the anchor itself. If that row's genuine span is too
-        narrow (e.g. an occluder crosses exactly at that height), searches
-        outward row by row up to MAX_ROW_SEARCH_OFFSET before giving up.
+        walk_to_genuine_boundary), then backs off from each boundary to
+        avoid the single riskiest edge pixel while keeping most of the
+        spread a stable circle fit needs. The middle point is the anchor
+        itself. If that row's genuine span is too narrow (e.g. an occluder
+        crosses exactly at that height), searches outward row by row up to
+        MAX_ROW_SEARCH_OFFSET before giving up.
+
+        Il backoff da ciascun lato e' ADATTIVO, non un GRASP_POINT_BACKOFF_PIXELS
+        fisso: se l'oggetto e' molto occluso (es. da un altro oggetto piu'
+        vicino, come nel test dei biscotti davanti alla coca) l'arco visibile
+        puo' essere stretto e sbilanciato rispetto all'ancora -- un backoff
+        fisso puo' "mangiarsi" tutto il margine disponibile da un lato e far
+        collassare quel punto esattamente sull'ancora (2 punti distinti invece
+        di 3, circonferenza non ricostruibile). Il backoff usato e' quindi
+        min(GRASP_POINT_BACKOFF_PIXELS, margine_disponibile_da_quel_lato - 1):
+        i 3 punti restano distinti finche' c'e' anche un solo pixel di arco
+        visibile oltre l'ancora, qualunque sia la percentuale di occlusione --
+        collassa solo nel caso davvero degenere (zero pixel di margine da un
+        lato, l'ancora e' gia' sul bordo).
 
         Returns a list of NUM_GRASP_CIRCLE_POINTS geometry_msgs/Point in the
         camera's depth optical frame, or None if no row in range had a wide
@@ -640,8 +653,15 @@ class RtObjectDetectionNode(Node):
             if (right_boundary - left_boundary + 1) < MIN_VALID_COLUMNS_FOR_ROW:
                 continue
 
-            right_col = max(start_col_local, right_boundary - GRASP_POINT_BACKOFF_PIXELS)
-            left_col = min(start_col_local, left_boundary + GRASP_POINT_BACKOFF_PIXELS)
+            # Backoff adattivo per lato -- vedi la spiegazione nel docstring:
+            # non piu' di quanto disponibile, cosi' il punto non collassa mai
+            # sull'ancora a meno che il margine da quel lato sia davvero zero.
+            right_margin = right_boundary - start_col_local
+            left_margin = start_col_local - left_boundary
+            right_backoff = min(GRASP_POINT_BACKOFF_PIXELS, max(0, right_margin - 1))
+            left_backoff = min(GRASP_POINT_BACKOFF_PIXELS, max(0, left_margin - 1))
+            right_col = right_boundary - right_backoff
+            left_col = left_boundary + left_backoff
 
             return [
                 pixel_to_point(row_local, left_col),
