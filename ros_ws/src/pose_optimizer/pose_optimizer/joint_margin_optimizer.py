@@ -133,7 +133,7 @@ KNOWN_OBJECT_WORLD_XY = {
     # coordinate sbagliate.
     'coke can':      (5.0, 4.90),
     'pringles can':  (5.25, 5.05),
-    'biscuits pack': (5.0, 5.10),
+    'biscuits pack': (4.85, 5.10),
 }
 TABLE_WORLD_POSITION_XY = (5.0, 5.0)
 

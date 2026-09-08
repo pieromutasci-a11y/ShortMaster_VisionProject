@@ -190,13 +190,15 @@
     <include>
       <uri>model://biscuits_pack</uri>
       <name>s3_biscuits</name>
-      <!-- Vicini al centro del tavolo (5.0 5.0) ma un po' piu' indietro
-           della coca (Y maggiore = piu' lontani dalla camera): la coca
-           sta ORA davanti ai biscotti, quindi non li occlude piu'.
-           Niente piu' test di occlusione qui, e' tornata a una
-           disposizione "normale" per confrontare i modelli YOLO via
-           RViz (vedi rt_object_detection_node_all.py). -->
-      <pose>5.0 5.10 0.815  0 0 0</pose>
+      <!-- Vicini al centro del tavolo, piu' indietro della coca (Y
+           maggiore = piu' lontani dalla camera) E spostati a sinistra del
+           robot (X minore: con la posa di spawn, yaw 1.57, sinistra del
+           robot e' -X nel mondo): non piu' allineati sulla stessa linea
+           di vista della coca, altrimenti da davanti restano nascosti
+           dietro di lei. Disposizione "normale" (niente test di
+           occlusione) per confrontare i modelli YOLO via RViz (vedi
+           rt_object_detection_node_all.py). -->
+      <pose>4.85 5.10 0.815  0 0 0</pose>
     </include>
 
     <include>
