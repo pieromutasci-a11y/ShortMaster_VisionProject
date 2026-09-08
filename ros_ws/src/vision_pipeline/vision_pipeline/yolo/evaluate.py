@@ -169,8 +169,21 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
     return data_yaml_path
 
 
+def model_stem_for(model_path):
+    """
+    Nome usato per la sottocartella di output e nei log. Di norma il nome
+    file senza estensione, ma "best.pt" e' il nome generico che Ultralytics
+    da' SEMPRE al checkpoint migliore di una run (qualunque run) -- usarlo
+    cosi' com'e' sarebbe ambiguo (di quale run e' il "best"?). Tra i
+    modelli di MODEL_PATHS e' il checkpoint dello sweep W&B: rinominato
+    esplicitamente per dirlo.
+    """
+    stem = os.path.splitext(os.path.basename(model_path))[0]
+    return 'sweep_best' if stem == 'best' else stem
+
+
 def evaluate_one_model(model_path, original_class_names):
-    model_stem = os.path.splitext(os.path.basename(model_path))[0]
+    model_stem = model_stem_for(model_path)
     model_output_dir = os.path.join(EVALUATION_DIR, "models_comparison", model_stem)
 
     model = YOLO(model_path)
