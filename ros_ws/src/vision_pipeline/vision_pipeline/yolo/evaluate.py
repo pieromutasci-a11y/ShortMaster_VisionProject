@@ -15,6 +15,14 @@ DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.
 TEST_IMAGES_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/images"
 RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs"
 
+# Nome della cartella di output derivato dal checkpoint valutato (es.
+# ".../small_omogeneous_dataset_model_best.pt" -> "evaluation_test_small_omogeneous_dataset_model_best"),
+# non piu' fisso: lanciare questo script su piu' modelli in sequenza
+# (cambiando YOLO_MODEL_PATH) altrimenti sovrascriveva ogni volta lo
+# stesso "evaluation_test"/"predictions_test", perdendo i risultati dei
+# modelli precedenti -- indispensabile per confrontarli.
+MODEL_STEM = os.path.splitext(os.path.basename(MODEL_PATH))[0]
+
 # Le classi che contano davvero per il task di grasping (posa target end effector).
 # bookshelf e dinner table sono contesto di scena, non oggetti da afferrare/riferimento di posa.
 GRASP_RELEVANT_CLASSES = ["coke can", "pringles can", "biscuits pack", "aruco marker"]
@@ -32,7 +40,7 @@ def main():
         save_json=True,     # salva anche i risultati in formato COCO json
         plots=True,          # genera confusion_matrix.png, PR/F1/P/R curves, ecc.
         project=RUNS_DIR,
-        name="evaluation_test",
+        name=f"evaluation_test_{MODEL_STEM}",
         exist_ok=True,
     )
 
@@ -135,7 +143,7 @@ def main():
         show_labels=True,
         show_conf=True,
         project=RUNS_DIR,
-        name="predictions_test",
+        name=f"predictions_test_{MODEL_STEM}",
         exist_ok=True,
     )
 
@@ -151,7 +159,7 @@ def main():
             name = model.names[cls]
             print(f"  → {name}: {conf*100:.1f}%")
 
-    print(f"\nImmagini con bounding box salvate in: {RUNS_DIR}/predictions_test/")
+    print(f"\nImmagini con bounding box salvate in: {RUNS_DIR}/predictions_test_{MODEL_STEM}/")
 
 
 if __name__ == '__main__':
