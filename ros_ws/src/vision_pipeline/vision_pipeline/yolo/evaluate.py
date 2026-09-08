@@ -15,13 +15,20 @@ DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.
 TEST_IMAGES_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/images"
 RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs"
 
-# Nome della cartella di output derivato dal checkpoint valutato (es.
-# ".../small_omogeneous_dataset_model_best.pt" -> "evaluation_test_small_omogeneous_dataset_model_best"),
-# non piu' fisso: lanciare questo script su piu' modelli in sequenza
-# (cambiando YOLO_MODEL_PATH) altrimenti sovrascriveva ogni volta lo
-# stesso "evaluation_test"/"predictions_test", perdendo i risultati dei
-# modelli precedenti -- indispensabile per confrontarli.
+# Cartella di output derivata dal checkpoint valutato (es.
+# ".../small_omogeneous_dataset_model_best.pt" ->
+# models_comparison/small_omogeneous_dataset_model_best/), non piu' fissa:
+# lanciare questo script su piu' modelli in sequenza (cambiando
+# YOLO_MODEL_PATH) altrimenti sovrascriveva ogni volta lo stesso
+# "evaluation_test"/"predictions_test", perdendo i risultati dei modelli
+# precedenti. Una sottocartella per modello dentro models_comparison/: a
+# differenza di models_comparison_sweep.py (che genera grafici che
+# confrontano piu' run tra loro), qui ogni sottocartella contiene solo i
+# grafici/dati DI QUEL modello -- nessun confronto incrociato generato da
+# questo script, il confronto lo si fa a occhio guardando le sottocartelle
+# una accanto all'altra.
 MODEL_STEM = os.path.splitext(os.path.basename(MODEL_PATH))[0]
+MODEL_OUTPUT_DIR = os.path.join(RUNS_DIR, "models_comparison", MODEL_STEM)
 
 # Le classi che contano davvero per il task di grasping (posa target end effector).
 # bookshelf e dinner table sono contesto di scena, non oggetti da afferrare/riferimento di posa.
@@ -39,8 +46,8 @@ def main():
         split="test",
         save_json=True,     # salva anche i risultati in formato COCO json
         plots=True,          # genera confusion_matrix.png, PR/F1/P/R curves, ecc.
-        project=RUNS_DIR,
-        name=f"evaluation_test_{MODEL_STEM}",
+        project=MODEL_OUTPUT_DIR,
+        name="evaluation_test",
         exist_ok=True,
     )
 
@@ -142,8 +149,8 @@ def main():
         save=True,
         show_labels=True,
         show_conf=True,
-        project=RUNS_DIR,
-        name=f"predictions_test_{MODEL_STEM}",
+        project=MODEL_OUTPUT_DIR,
+        name="predictions_test",
         exist_ok=True,
     )
 
@@ -159,7 +166,7 @@ def main():
             name = model.names[cls]
             print(f"  → {name}: {conf*100:.1f}%")
 
-    print(f"\nImmagini con bounding box salvate in: {RUNS_DIR}/predictions_test_{MODEL_STEM}/")
+    print(f"\nImmagini con bounding box salvate in: {MODEL_OUTPUT_DIR}/predictions_test/")
 
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ setup(
             'yolo_train = vision_pipeline.yolo.train:main',
             'yolo_evaluate = vision_pipeline.yolo.evaluate:main',
             'yolo_predict = vision_pipeline.yolo.predict:main',
-            'yolo_models_comparison = vision_pipeline.yolo.models_comparison:main',
+            'yolo_models_comparison_sweep = vision_pipeline.yolo.models_comparison_sweep:main',
         ],
     },
 )
