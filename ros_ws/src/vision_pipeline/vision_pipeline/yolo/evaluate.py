@@ -40,12 +40,17 @@ un'identita' -- nessuna differenza rispetto a valutare sul dataset intero.
 Ogni modello stampa un'intestazione con path e classi PRIMA dei risultati
 (altrimenti, con piu' modelli in sequenza, l'output non direbbe a quale
 modello si riferisce) e scrive in una propria sottocartella dentro
-models/runs/models_comparison/<nome_checkpoint>/ -- cosi' i risultati di
-un modello non sovrascrivono quelli del precedente. Ogni sottocartella
-contiene SOLO i dati di quel modello (evaluation/, prediction/): nessun
-grafico di confronto incrociato generato da questo script -- per quello
-vedi models_comparison_sweep.py (solo run dello sweep W&B pero', non
-questi 4 checkpoint).
+models_evaluation/models_comparison/<nome_checkpoint>/ -- cosi' i
+risultati di un modello non sovrascrivono quelli del precedente. Ogni
+sottocartella contiene SOLO i dati di quel modello (evaluation/,
+prediction/): nessun grafico di confronto incrociato generato da questo
+script -- per quello vedi models_comparison_sweep.py (solo run dello
+sweep W&B pero', non questi 4 checkpoint).
+
+NOTA: l'output vive in models_evaluation/, non in models/ -- quella
+cartella resta riservata ai pesi veri (wandb/, pretrained/, i checkpoint
+*.pt), tutto cio' che questo script genera (grafici, confusion matrix,
+immagini annotate) e' derivato/rigenerabile, non un modello.
 """
 import os
 import tempfile
@@ -58,9 +63,9 @@ from ultralytics import YOLO
 # ─────────────────────────────────────────────
 MODEL_PATHS = [
     "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt",
-    "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_omogeneous_dataset_model_best.pt",
-    "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_eterogeneous_dataset_model_best.pt",
-    "/home/user/ros_workspace/src/vision_pipeline/models/runs/segmentation_model_best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/small_omogeneous_dataset_model_best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/small_eterogeneous_dataset_model_best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt",
 ]
 if 'YOLO_MODEL_PATH' in os.environ:
     MODEL_PATHS = [os.environ['YOLO_MODEL_PATH']]  # un solo modello, non tutti e 4
@@ -68,7 +73,8 @@ if 'YOLO_MODEL_PATH' in os.environ:
 DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/data.yaml"
 TEST_IMAGES_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/images"
 TEST_LABELS_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/labels"
-RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs"
+# NON dentro models/ (riservata ai pesi veri) -- vedi nota in cima al file.
+EVALUATION_DIR = "/home/user/ros_workspace/src/vision_pipeline/models_evaluation"
 
 # Le classi che contano davvero per il task di grasping (posa target end effector).
 # bookshelf e dinner table sono contesto di scena, non oggetti da afferrare/riferimento di posa.
@@ -165,7 +171,7 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
 
 def evaluate_one_model(model_path, original_class_names):
     model_stem = os.path.splitext(os.path.basename(model_path))[0]
-    model_output_dir = os.path.join(RUNS_DIR, "models_comparison", model_stem)
+    model_output_dir = os.path.join(EVALUATION_DIR, "models_comparison", model_stem)
 
     model = YOLO(model_path)
     model_class_names = [model.names[i] for i in sorted(model.names)]
@@ -340,7 +346,7 @@ def main():
 
     print("\n" + "#" * 60)
     print(f"# Fatto -- {len(MODEL_PATHS)} modelli valutati.")
-    print(f"# Risultati in: {RUNS_DIR}/models_comparison/<nome_checkpoint>/")
+    print(f"# Risultati in: {EVALUATION_DIR}/models_comparison/<nome_checkpoint>/")
     print("#" * 60)
 
 

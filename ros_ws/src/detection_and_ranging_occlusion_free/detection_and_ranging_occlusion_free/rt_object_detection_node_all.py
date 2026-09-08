@@ -72,7 +72,7 @@ MAX_RANGE = 3.0
 # o appartiene gia' allo sfondo.
 DEPTH_PATCH_FRACTION = 0.3
 
-# Confronto tra modelli in corso (vedi vision_pipeline/models/runs/): al
+# Confronto tra modelli in corso (vedi vision_pipeline/models/): al
 # momento in uso il modello di SEGMENTAZIONE (YOLOv8-seg, non detection) --
 # per tornare a un altro modello commentare/scommentare la riga giusta tra
 # queste. Un modello -seg pubblica anche le maschere per istanza oltre alle
@@ -80,9 +80,9 @@ DEPTH_PATCH_FRACTION = 0.3
 # -- stesso codice, nessuna modifica necessaria per usarlo. detection_results.plot()
 # in piu' disegnera' anche i contorni della maschera sul frame annotato.
 # MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
-# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_omogeneous_dataset_model_best.pt"
-# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_eterogeneous_dataset_model_best.pt"
-MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/segmentation_model_best.pt"
+# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/small_omogeneous_dataset_model_best.pt"
+# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/small_eterogeneous_dataset_model_best.pt"
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt"
 
 
 def topic_slug(class_name):
@@ -95,7 +95,7 @@ def normalize_yolo_class_name(raw_class_name):
     Normalizza il nome classe grezzo letto da model.names PRIMA di
     confrontarlo con TRACKED_CLASSES.
 
-    Emerso confrontando modelli diversi in models/runs/ per lo stesso
+    Emerso confrontando modelli diversi in models/ per lo stesso
     confronto: run di training diverse etichettano leggermente diverso
     anche per le STESSE classi (es. il modello di segmentazione ha
     'coke_can' con underscore invece di uno spazio, e 'pringles  can' con

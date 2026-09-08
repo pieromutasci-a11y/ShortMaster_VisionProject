@@ -12,11 +12,11 @@ neutro per tutte, colore coerente per run tra i grafici.
 
 Solo le run dello SWEEP W&B -- per il confronto tra i modelli valutati
 singolarmente sul test set (evaluate.py), vedi invece
-models/runs/models_comparison/<nome_checkpoint>/, una sottocartella per
-modello.
+models_evaluation/models_comparison/<nome_checkpoint>/, una sottocartella
+per modello.
 
 Output organizzato in una sottocartella per ogni cosa che si sta plottando,
-dentro models/runs/models_comparison_sweep/:
+dentro models_evaluation/models_comparison_sweep/:
   box_loss/, cls_loss/, dfl_loss/   -- train.png e val.png (results.csv)
   precision_recall/                  -- precision.png, recall.png (results.csv)
   map/                                -- map50.png, map50_95.png (results.csv)
@@ -37,7 +37,7 @@ matplotlib.use('Agg')  # nessun display nel container, solo salvataggio su file
 import matplotlib.pyplot as plt
 
 SWEEP_RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training"
-OUTPUT_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs/models_comparison_sweep"
+OUTPUT_DIR = "/home/user/ros_workspace/src/vision_pipeline/models_evaluation/models_comparison_sweep"
 SUMMARY_CSV = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/all_sweeps_summary.csv"
 SWEEP_ID = "sqkfh2ka"
 

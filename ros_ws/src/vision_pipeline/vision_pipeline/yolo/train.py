@@ -3,7 +3,11 @@
 from ultralytics import YOLO
 
 DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/data.yaml"
-RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs"
+# NON dentro models/ (riservata ai pesi veri: wandb/, pretrained/, i
+# checkpoint *.pt) -- una nuova run di training va qui; se il risultato
+# e' buono, promuoverlo a mano in models/ (stessa convenzione gia' usata
+# per i checkpoint dello sweep W&B copiati in models/*.pt).
+RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models_evaluation"
 
 
 def main():

@@ -8,7 +8,9 @@ MODEL_NAME = 'yolov8x.pt'
 
 # Cartella con le immagini su cui fare inferenza.
 SOURCE_DIR = '/home/user/ros_workspace/src/vision_pipeline/data/raw_captures/original'
-RUNS_DIR = '/home/user/ros_workspace/src/vision_pipeline/models/runs'
+# NON dentro models/ (riservata ai pesi veri: wandb/, pretrained/, i
+# checkpoint *.pt) -- l'output di questo script e' derivato/rigenerabile.
+RUNS_DIR = '/home/user/ros_workspace/src/vision_pipeline/models_evaluation'
 
 
 def main():
