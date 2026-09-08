@@ -59,7 +59,7 @@ KNOWN_OBJECT_WORLD_XY = {
     # cambiano (es. per un test di occlusione), vanno aggiornate anche qui,
     # altrimenti il fit rigido che ricostruisce la posa del tavolo userebbe
     # coordinate sbagliate.
-    'coke can':      (5.0, 4.80),
+    'coke can':      (5.0, 5.0),
     'pringles can':  (5.25, 5.05),
     'biscuits pack': (5.03, 4.65),
 }

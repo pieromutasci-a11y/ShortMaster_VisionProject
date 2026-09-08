@@ -172,11 +172,12 @@
     <include>
       <uri>model://cocacola</uri>
       <name>s3_cocacola</name>
-      <!-- Spostata "indietro" (Y maggiore, piu' lontana dalla camera che
-           guarda verso +Y dalla posa di spawn del robot, 5.0 3.5) rispetto
-           alla posizione originale (5.0 4.65), per lasciare spazio ai
-           biscotti davanti a lei: test occlusion handling, vedi s3_biscuits. -->
-      <pose>5.0 4.80 0.815  0 0 0</pose>
+      <!-- Al centro esatto del tavolo (5.0 5.0, il tavolo e' 1.0 x 0.8 m
+           centrato li'), invece che vicino al bordo come nella posizione
+           originale (5.0 4.65). L'occlusione stimata dai biscotti davanti
+           a lei resta praticamente invariata (~48%, era ~49% a Y=4.80).
+           Non serve spostare anche s3_biscuits. -->
+      <pose>5.0 5.0 0.815  0 0 0</pose>
     </include>
 
 
