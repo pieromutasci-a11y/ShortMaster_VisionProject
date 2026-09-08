@@ -172,12 +172,12 @@
     <include>
       <uri>model://cocacola</uri>
       <name>s3_cocacola</name>
-      <!-- Al centro esatto del tavolo (5.0 5.0, il tavolo e' 1.0 x 0.8 m
-           centrato li'), invece che vicino al bordo come nella posizione
-           originale (5.0 4.65). L'occlusione stimata dai biscotti davanti
-           a lei resta praticamente invariata (~48%, era ~49% a Y=4.80).
-           Non serve spostare anche s3_biscuits. -->
-      <pose>5.0 5.0 0.815  0 0 0</pose>
+      <!-- Vicina al centro del tavolo (5.0 5.0) ma un po' piu' avanti
+           (Y minore = piu' vicina alla camera, che guarda verso +Y dalla
+           posa di spawn del robot, 5.0 3.5): la coca sta ORA davanti ai
+           biscotti, non il contrario come nel test di occlusione
+           precedente. Vedi s3_biscuits. -->
+      <pose>5.0 4.90 0.815  0 0 0</pose>
     </include>
 
 
@@ -190,16 +190,13 @@
     <include>
       <uri>model://biscuits_pack</uri>
       <name>s3_biscuits</name>
-      <!-- Spostati davanti alla coca (Y minore = piu' vicini alla camera)
-           e sfalsati in X, cosi' da coprirne il ~49% della larghezza
-           apparente vista dalla camera (raggio coca 0.04m, raggio
-           biscotti 0.029m: anche i biscotti sono un cilindro in questo
-           modello, non una scatola). A meta' strada tra X=5.04 (~34%,
-           funziona) e X=5.02 (~60%, falliva: arco troppo stretto, fit
-           mal condizionato). Si cerca il limite oltre il quale il fit
-           torna a essere scartato. Test occlusion handling per
-           detection_and_ranging_occlusion_handler. -->
-      <pose>5.03 4.65 0.815  0 0 0</pose>
+      <!-- Vicini al centro del tavolo (5.0 5.0) ma un po' piu' indietro
+           della coca (Y maggiore = piu' lontani dalla camera): la coca
+           sta ORA davanti ai biscotti, quindi non li occlude piu'.
+           Niente piu' test di occlusione qui, e' tornata a una
+           disposizione "normale" per confrontare i modelli YOLO via
+           RViz (vedi rt_object_detection_node_all.py). -->
+      <pose>5.0 5.10 0.815  0 0 0</pose>
     </include>
 
     <include>
