@@ -71,6 +71,7 @@ cartella resta riservata ai pesi veri (wandb/, pretrained/, i checkpoint
 immagini annotate) e' derivato/rigenerabile, non un modello.
 """
 import os
+import shutil
 import tempfile
 
 import yaml
@@ -146,10 +147,22 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
 
     images_dir = os.path.join(tmp_dir, 'test', 'images')
     labels_dir = os.path.join(tmp_dir, 'test', 'labels')
-    os.makedirs(os.path.dirname(images_dir), exist_ok=True)
-    os.symlink(TEST_IMAGES_DIR, images_dir)  # niente duplicazione delle immagini vere
+    os.makedirs(images_dir, exist_ok=True)
     os.makedirs(labels_dir, exist_ok=True)
 
+    # NON un symlink alla cartella immagini vera: Ultralytics calcola
+    # l'hash/cache del dataset e ricava la cartella label dalla cartella
+    # immagini seguendo il path -- se lo risolve al link reale (comune per
+    # calcolare una chiave di cache stabile), finisce per leggere le LABEL
+    # ORIGINALI non filtrate dalla cartella vera, ignorando silenziosamente
+    # quelle filtrate scritte qui sotto (root cause di un crash identico a
+    # quello pre-filtro, verificato: stesso identico errore anche con il
+    # filtro attivo). Copie vere -- sono poche immagini piccole (98, decine
+    # di KB l'una), il costo è trascurabile.
+    for filename in os.listdir(TEST_IMAGES_DIR):
+        shutil.copy2(os.path.join(TEST_IMAGES_DIR, filename), os.path.join(images_dir, filename))
+
+    class_instance_counts = [0] * len(model_class_names)  # diagnostica: quante istanze sopravvivono al filtro, per classe
     label_filenames = [f for f in os.listdir(TEST_LABELS_DIR) if f.endswith('.txt')]
     for filename in label_filenames:
         with open(os.path.join(TEST_LABELS_DIR, filename)) as f:
@@ -164,6 +177,7 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
             model_class_idx = original_to_model_index.get(original_class_idx)
             if model_class_idx is not None:
                 filtered_lines.append(' '.join([str(model_class_idx)] + parts[1:]) + '\n')
+                class_instance_counts[model_class_idx] += 1
             # riga scartata: oggetto di una classe che il modello non conosce --
             # esattamente il filtro che serve (vedi docstring del modulo).
 
@@ -171,6 +185,10 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
         # modello): Ultralytics si aspetta un file per ogni immagine.
         with open(os.path.join(labels_dir, filename), 'w') as f:
             f.writelines(filtered_lines)
+
+    print("Istanze per classe nel ground truth filtrato (diagnostica -- se sono tutte 0, il filtro non ha funzionato):")
+    for name, count in zip(model_class_names, class_instance_counts):
+        print(f"  {normalize_yolo_class_name(name):<20}: {count}")
 
     data_yaml_path = os.path.join(tmp_dir, 'data.yaml')
     with open(data_yaml_path, 'w') as f:
