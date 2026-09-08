@@ -90,6 +90,24 @@ def topic_slug(class_name):
     return class_name.replace(' ', '_')
 
 
+def normalize_yolo_class_name(raw_class_name):
+    """
+    Normalizza il nome classe grezzo letto da model.names PRIMA di
+    confrontarlo con TRACKED_CLASSES.
+
+    Emerso confrontando modelli diversi in models/runs/ per lo stesso
+    confronto: run di training diverse etichettano leggermente diverso
+    anche per le STESSE classi (es. il modello di segmentazione ha
+    'coke_can' con underscore invece di uno spazio, e 'pringles  can' con
+    due spazi invece di uno) -- un confronto con uguaglianza esatta le
+    scarta silenziosamente (nessun errore, nessun centro pubblicato, il
+    sintomo e' "non succede niente"). Underscore -> spazio, poi qualsiasi
+    sequenza di spazi ridotta a uno solo: rende il confronto robusto a
+    queste variazioni senza bisogno di un caso speciale per ogni modello.
+    """
+    return ' '.join(raw_class_name.replace('_', ' ').split())
+
+
 class BoundingBoxPixels:
     """
     Bounding box in coordinate pixel della DEPTH image, con la depth stimata.
@@ -307,7 +325,7 @@ class RtObjectDetectionAllNode(Node):
         boxes = []
         for bounding_box in detection_results.boxes:
             class_id = int(bounding_box.cls[0])
-            class_name = self.detection_model.names[class_id]
+            class_name = normalize_yolo_class_name(self.detection_model.names[class_id])
             confidence_score = float(bounding_box.conf[0])
 
             if class_name not in TRACKED_CLASSES or confidence_score < DETECTION_CONFIDENCE_THRESHOLD:
