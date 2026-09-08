@@ -73,11 +73,11 @@ MAX_RANGE = 3.0
 DEPTH_PATCH_FRACTION = 0.3
 
 # Confronto tra modelli in corso (vedi vision_pipeline/models/runs/): al
-# momento in uso il modello "piccolo ed eterogeneo" -- per tornare a un
-# altro modello commentare/scommentare la riga giusta tra queste.
-# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
+# momento in uso il best dello sweep W&B (run xl1874f6) -- per tornare a
+# un altro modello commentare/scommentare la riga giusta tra queste.
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
 # MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_omogeneous_dataset_model_best.pt"
-MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_eterogeneous_dataset_model_best.pt"
+# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_eterogeneous_dataset_model_best.pt"
 
 
 def topic_slug(class_name):
