@@ -37,23 +37,32 @@ all'indice proprio del modello. Per un modello con tutte e 6 le classi
 nello stesso ordine del dataset (es. "small_eterogeneous") il filtro e'
 un'identita' -- nessuna differenza rispetto a valutare sul dataset intero.
 
---- Perche' un modello di SEGMENTAZIONE viene valutato in modalita' 'detect' ---
+--- Perche' un modello di SEGMENTAZIONE riceve poligoni, non box ---
 
 "segmentation_model_best" (YOLO26s-seg, non YOLOv8 come gli altri 3 --
 architettura diversa, non solo taglia) predice anche maschere per
-istanza, non solo box. Il nostro ground truth filtrato sopra e' pero' in
-formato box puro (classe x y w h): passato cosi' com'e' al validator di
-segmentazione, che si aspetta poligoni, genera maschere degeneri e
-crasha (verificato: "The shape of the mask [83] at index 0 does not
-match the shape of the indexed tensor [0, 1] at index 0"). Per questo
-modello si costruisce quindi un'istanza YOLO separata con
-task='detect' forzato alla creazione (l'override non ha effetto passato
-a .val(): il task e' fissato alla costruzione del Model) -- stessi pesi,
-ma Ultralytics userà il Validator box-only, coerente col nostro ground
-truth. La metrica di segmentazione (mask mAP) non viene quindi
-calcolata per questo modello, solo quella box -- comunque quella che
-interessa per il grasping (target/ostacoli localizzati da un box, non
-da una maschera pixel-precisa).
+istanza, non solo box. Il nostro ground truth filtrato e' pero' in
+formato box puro (classe x y w h) nel dataset originale: passato cosi'
+com'e' al validator di segmentazione, che si aspetta poligoni, genera
+maschere degeneri e crasha (verificato: "The shape of the mask [83] at
+index 0 does not match the shape of the indexed tensor [0, 1] at index
+0"). Un primo tentativo -- costruire un'istanza YOLO separata con
+task='detect' forzato alla creazione, per usare il Validator box-only
+-- NON ha funzionato: verificato che il Validator resta comunque quello
+di segmentazione (le colonne "Mask" restano nell'intestazione stampata
+da Ultralytics anche con l'override).
+
+Soluzione adottata: per un modello con task=='segment',
+build_filtered_test_dataset (as_polygons=True) scrive ogni box come un
+RETTANGOLO a 4 vertici (i suoi stessi angoli), non come box puro -- un
+formato che il validator di segmentazione sa interpretare. Le metriche
+Box risultanti sono identiche a quelle di un box puro (il rettangolo
+E' quel box); quelle Mask sono un proxy approssimato (il predetto viene
+confrontato con un rettangolo, non con la sagoma vera dell'oggetto) --
+non affidabili come vera accuratezza di segmentazione, ma sufficienti a
+far girare il validator senza crash. Per il grasping conta comunque la
+metrica Box (target/ostacoli localizzati da un box, non da una maschera
+pixel-precisa).
 
 Ogni modello stampa un'intestazione con path e classi PRIMA dei risultati
 (altrimenti, con piu' modelli in sequenza, l'output non direbbe a quale
@@ -118,13 +127,27 @@ def load_original_class_names():
     return data['names']
 
 
-def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir):
+def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir, as_polygons=False):
     """
     Ricostruisce, dentro tmp_dir, un mini dataset di valutazione per un
     modello con classi (model_class_names, indicizzate come nel modello)
     diverse -- in numero e/o ordine -- da quelle del dataset completo
     (original_class_names, indicizzate come nel dataset). Vedi il
     docstring del modulo per il perche'.
+
+    as_polygons=True (modelli di SEGMENTAZIONE): il nostro dataset ha solo
+    box, non poligoni/maschere vere -- ogni box viene scritto come un
+    RETTANGOLO a 4 vertici (i suoi stessi angoli), non come box puro.
+    Forzare task='detect' al costruttore YOLO() NON basta (verificato: il
+    validator resta comunque quello di segmentazione, si vede dalle
+    colonne "Mask" nell'intestazione stampata da Ultralytics anche con
+    l'override) -- serve dare al validator un formato che sappia
+    interpretare. Le metriche Box risultanti sono identiche a quelle che
+    si otterrebbero da un box puro (il rettangolo dei 4 vertici e' lo
+    stesso box); quelle Mask sono un proxy approssimato (il predetto
+    viene confrontato con un rettangolo, non con la sagoma vera
+    dell'oggetto) -- non affidabili come vera accuratezza di
+    segmentazione, ma sufficienti a far girare il validator senza crash.
 
     Ritorna il path al data.yaml risultante.
     """
@@ -176,7 +199,17 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
             original_class_idx = int(parts[0])
             model_class_idx = original_to_model_index.get(original_class_idx)
             if model_class_idx is not None:
-                filtered_lines.append(' '.join([str(model_class_idx)] + parts[1:]) + '\n')
+                if as_polygons:
+                    xc, yc, w, h = (float(v) for v in parts[1:5])
+                    x1, y1 = max(0.0, min(1.0, xc - w / 2)), max(0.0, min(1.0, yc - h / 2))
+                    x2, y2 = max(0.0, min(1.0, xc + w / 2)), max(0.0, min(1.0, yc + h / 2))
+                    # rettangolo come poligono a 4 vertici, in ordine (angoli del box)
+                    coords = [x1, y1, x2, y1, x2, y2, x1, y2]
+                    filtered_lines.append(
+                        ' '.join([str(model_class_idx)] + [f'{c:.6f}' for c in coords]) + '\n'
+                    )
+                else:
+                    filtered_lines.append(' '.join([str(model_class_idx)] + parts[1:]) + '\n')
                 class_instance_counts[model_class_idx] += 1
             # riga scartata: oggetto di una classe che il modello non conosce --
             # esattamente il filtro che serve (vedi docstring del modulo).
@@ -234,30 +267,18 @@ def evaluate_one_model(model_path, original_class_names):
     print(f"# Output: {model_output_dir}")
     print("#" * 60)
 
-    # Un modello di SEGMENTAZIONE (es. segmentation_model_best, YOLO26s-seg)
-    # va valutato in modalita' 'detect' (solo il ramo box, maschera
-    # ignorata): il nostro ground truth filtrato (build_filtered_test_dataset)
-    # e' in formato box puro (classe x y w h), non poligoni -- passato al
-    # validator di segmentazione cosi' com'e' genera maschere degeneri e
-    # crasha (verificato: "The shape of the mask [83] at index 0 does not
-    # match the shape of the indexed tensor [0, 1] at index 0"). Serve
-    # un'istanza YOLO separata con task forzato a costruzione (l'override
-    # non funziona passato a .val(), il task e' fissato alla creazione
-    # dell'oggetto Model) -- model_for_val resta comunque lo stesso
-    # checkpoint/pesi, cambia solo quale Validator Ultralytics sceglie.
-    model_for_val = YOLO(model_path, task='detect') if model.task == 'segment' else model
-
     # ─────────────────────────────────────────────
     # VALUTAZIONE SUL TEST SET, FILTRATO/RIMAPPATO SULLE CLASSI DEL MODELLO
     # (vedi il docstring del modulo per il perche')
     # ─────────────────────────────────────────────
     with tempfile.TemporaryDirectory(prefix=f'yolo_eval_{model_stem}_') as tmp_dir:
         filtered_data_yaml = build_filtered_test_dataset(
-            model_class_names, original_class_names, tmp_dir
+            model_class_names, original_class_names, tmp_dir,
+            as_polygons=(model.task == 'segment'),
         )
 
         try:
-            metrics = model_for_val.val(
+            metrics = model.val(
                 data=filtered_data_yaml,
                 split="test",
                 save_json=True,     # salva anche i risultati in formato COCO json
