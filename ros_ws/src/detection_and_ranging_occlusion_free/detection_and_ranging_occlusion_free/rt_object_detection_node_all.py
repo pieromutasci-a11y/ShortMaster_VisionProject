@@ -72,8 +72,11 @@ MAX_RANGE = 3.0
 # o appartiene gia' allo sfondo.
 DEPTH_PATCH_FRACTION = 0.3
 
-# Best model dello sweep W&B (run xl1874f6, vedi vision_pipeline/vision_pipeline/yolo/evaluate.py)
-MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
+# Confronto tra modelli in corso (vedi vision_pipeline/models/runs/): al
+# momento in uso il modello "piccolo e omogeneo" -- per tornare al best
+# dello sweep W&B (run xl1874f6) commentare/scommentare le due righe sotto.
+# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_omogeneous_dataset_model_best.pt"
 
 
 def topic_slug(class_name):
