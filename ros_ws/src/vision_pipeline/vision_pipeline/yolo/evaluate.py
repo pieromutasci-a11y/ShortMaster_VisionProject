@@ -1,5 +1,26 @@
 #!/usr/bin/env python3
-"""Valutazione di un modello YOLOv8 addestrato sul test set del dataset di grasping."""
+"""Valutazione di uno o piu' modelli YOLOv8 sul test set del dataset di grasping.
+
+Di default valuta TUTTI i modelli in MODEL_PATHS, uno alla volta, sullo
+STESSO test set (data/training_dataset.yolov8/test/, 98 immagini, 6 classi
+-- l'unico dataset "completo" presente nel repo, usato per tutto il
+progetto finora): confronto equo, stesso metro per tutti.
+
+Per valutarne uno solo, YOLO_MODEL_PATH sovrascrive MODEL_PATHS (comodo
+mentre si aggiunge/tara un modello nuovo, senza rilanciare tutti gli
+altri):
+  YOLO_MODEL_PATH=/path/al/modello.pt python3 evaluate.py
+
+Ogni modello stampa un'intestazione con il proprio path PRIMA dei
+risultati (altrimenti, con piu' modelli in sequenza, l'output non direbbe
+a quale modello si riferisce) e scrive in una propria sottocartella
+dentro models/runs/models_comparison/<nome_checkpoint>/ -- cosi' i
+risultati di un modello non sovrascrivono quelli del precedente. Ogni
+sottocartella contiene SOLO i dati di quel modello (evaluation/,
+prediction/): nessun grafico di confronto incrociato generato da questo
+script -- per quello vedi models_comparison_sweep.py (solo run dello
+sweep W&B pero', non questi 4 checkpoint).
+"""
 import os
 
 from ultralytics import YOLO
@@ -7,47 +28,46 @@ from ultralytics import YOLO
 # ─────────────────────────────────────────────
 # CONFIGURAZIONE
 # ─────────────────────────────────────────────
-MODEL_PATH = os.environ.get(
-    'YOLO_MODEL_PATH',
+MODEL_PATHS = [
     "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt",
-)
+    "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_omogeneous_dataset_model_best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/runs/small_eterogeneous_dataset_model_best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/runs/segmentation_model_best.pt",
+]
+if 'YOLO_MODEL_PATH' in os.environ:
+    MODEL_PATHS = [os.environ['YOLO_MODEL_PATH']]  # un solo modello, non tutti e 4
+
 DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/data.yaml"
 TEST_IMAGES_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/images"
 RUNS_DIR = "/home/user/ros_workspace/src/vision_pipeline/models/runs"
-
-# Cartella di output derivata dal checkpoint valutato (es.
-# ".../small_omogeneous_dataset_model_best.pt" ->
-# models_comparison/small_omogeneous_dataset_model_best/), non piu' fissa:
-# lanciare questo script su piu' modelli in sequenza (cambiando
-# YOLO_MODEL_PATH) altrimenti sovrascriveva ogni volta lo stesso
-# "evaluation_test"/"predictions_test", perdendo i risultati dei modelli
-# precedenti. Una sottocartella per modello dentro models_comparison/: a
-# differenza di models_comparison_sweep.py (che genera grafici che
-# confrontano piu' run tra loro), qui ogni sottocartella contiene solo i
-# grafici/dati DI QUEL modello -- nessun confronto incrociato generato da
-# questo script, il confronto lo si fa a occhio guardando le sottocartelle
-# una accanto all'altra.
-MODEL_STEM = os.path.splitext(os.path.basename(MODEL_PATH))[0]
-MODEL_OUTPUT_DIR = os.path.join(RUNS_DIR, "models_comparison", MODEL_STEM)
 
 # Le classi che contano davvero per il task di grasping (posa target end effector).
 # bookshelf e dinner table sono contesto di scena, non oggetti da afferrare/riferimento di posa.
 GRASP_RELEVANT_CLASSES = ["coke can", "pringles can", "biscuits pack", "aruco marker"]
 
 
-def main():
+def evaluate_one_model(model_path):
+    model_stem = os.path.splitext(os.path.basename(model_path))[0]
+    model_output_dir = os.path.join(RUNS_DIR, "models_comparison", model_stem)
+
+    print("\n" + "#" * 60)
+    print(f"# MODELLO: {model_stem}")
+    print(f"# Path: {model_path}")
+    print(f"# Output: {model_output_dir}")
+    print("#" * 60)
+
     # ─────────────────────────────────────────────
     # VALUTAZIONE SUL TEST SET
     # ─────────────────────────────────────────────
-    model = YOLO(MODEL_PATH)
+    model = YOLO(model_path)
 
     metrics = model.val(
         data=DATA_YAML,
         split="test",
         save_json=True,     # salva anche i risultati in formato COCO json
         plots=True,          # genera confusion_matrix.png, PR/F1/P/R curves, ecc.
-        project=MODEL_OUTPUT_DIR,
-        name="evaluation_test",
+        project=model_output_dir,
+        name="evaluation",
         exist_ok=True,
     )
 
@@ -114,7 +134,7 @@ def main():
     if grasp_maps:
         grasp_mean = sum(grasp_maps) / len(grasp_maps)
         print(f"\n>>> mAP50-95 media (grasping-relevant): {grasp_mean:.3f}  <<<")
-        print("(questo è il numero da confrontare tra un esperimento e l'altro)")
+        print("(questo è il numero da confrontare tra un modello e l'altro)")
     else:
         print("\nATTENZIONE: nessuna delle classi grasping-relevant è stata trovata nel test set.")
 
@@ -149,8 +169,8 @@ def main():
         save=True,
         show_labels=True,
         show_conf=True,
-        project=MODEL_OUTPUT_DIR,
-        name="predictions_test",
+        project=model_output_dir,
+        name="prediction",
         exist_ok=True,
     )
 
@@ -166,7 +186,21 @@ def main():
             name = model.names[cls]
             print(f"  → {name}: {conf*100:.1f}%")
 
-    print(f"\nImmagini con bounding box salvate in: {MODEL_OUTPUT_DIR}/predictions_test/")
+    print(f"\nImmagini con bounding box salvate in: {model_output_dir}/prediction/")
+
+
+def main():
+    print(f"Modelli da valutare ({len(MODEL_PATHS)}):")
+    for path in MODEL_PATHS:
+        print(f"  - {path}")
+
+    for model_path in MODEL_PATHS:
+        evaluate_one_model(model_path)
+
+    print("\n" + "#" * 60)
+    print(f"# Fatto -- {len(MODEL_PATHS)} modelli valutati.")
+    print(f"# Risultati in: {RUNS_DIR}/models_comparison/<nome_checkpoint>/")
+    print("#" * 60)
 
 
 if __name__ == '__main__':
