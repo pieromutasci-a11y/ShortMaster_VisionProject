@@ -1,0 +1,42 @@
+{
+  "model": "segmentation_model_best",
+  "model_path": "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt",
+  "task": "segment",
+  "classes": [
+    "biscuits pack",
+    "coke can",
+    "pringles can"
+  ],
+  "aggregate": {
+    "map50": 0.9823,
+    "map50_95": 0.6585,
+    "precision_mean": 0.9804,
+    "recall_mean": 0.983
+  },
+  "per_class": {
+    "biscuits pack": {
+      "precision": 0.9962,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.7041
+    },
+    "coke can": {
+      "precision": 0.945,
+      "recall": 0.963,
+      "map50": 0.9572,
+      "map50_95": 0.6505
+    },
+    "pringles can": {
+      "precision": 1.0,
+      "recall": 0.9861,
+      "map50": 0.9948,
+      "map50_95": 0.6209
+    }
+  },
+  "grasping_relevant": {
+    "coke can": 0.6505,
+    "pringles can": 0.6209,
+    "biscuits pack": 0.7041,
+    "mean": 0.6585
+  }
+}

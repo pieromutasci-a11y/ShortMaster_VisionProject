@@ -12,6 +12,13 @@ altri):
 
 --- Perche' il ground truth viene filtrato e rimappato per modello ---
 
+MODEL_PATHS elenca (nell'ordine): il best dello sweep W&B (Dataset Esteso
+con iperparametri ottimizzati), extended_eterogeneous_dataset_model_best
+(Dataset Esteso con iperparametri di riferimento, per isolare l'effetto
+della sola ottimizzazione a parita' di dati), small_omogeneous /
+small_eterogeneous (Dataset Base / Intermedio) e il modello di
+segmentazione.
+
 I modelli in MODEL_PATHS NON hanno tutti le stesse classi del dataset
 completo (6: aruco marker, biscuits pack, bookshelf, coke can,
 dinner table, pringles can). Es. "small_omogeneous_dataset_model" ne
@@ -72,13 +79,14 @@ risultati di un modello non sovrascrivono quelli del precedente. Ogni
 sottocartella contiene SOLO i dati di quel modello (evaluation/,
 prediction/): nessun grafico di confronto incrociato generato da questo
 script -- per quello vedi models_comparison_sweep.py (solo run dello
-sweep W&B pero', non questi 4 checkpoint).
+sweep W&B pero', non questi checkpoint).
 
 NOTA: l'output vive in models_evaluation/, non in models/ -- quella
 cartella resta riservata ai pesi veri (wandb/, pretrained/, i checkpoint
 *.pt), tutto cio' che questo script genera (grafici, confusion matrix,
 immagini annotate) e' derivato/rigenerabile, non un modello.
 """
+import json
 import os
 import shutil
 import tempfile
@@ -91,12 +99,13 @@ from ultralytics import YOLO
 # ─────────────────────────────────────────────
 MODEL_PATHS = [
     "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt",
+    "/home/user/ros_workspace/src/vision_pipeline/models/extended_eterogeneous_dataset_model_best.pt",
     "/home/user/ros_workspace/src/vision_pipeline/models/small_omogeneous_dataset_model_best.pt",
     "/home/user/ros_workspace/src/vision_pipeline/models/small_eterogeneous_dataset_model_best.pt",
     "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt",
 ]
 if 'YOLO_MODEL_PATH' in os.environ:
-    MODEL_PATHS = [os.environ['YOLO_MODEL_PATH']]  # un solo modello, non tutti e 4
+    MODEL_PATHS = [os.environ['YOLO_MODEL_PATH']]  # un solo modello, non tutti quelli in lista
 
 DATA_YAML = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/data.yaml"
 TEST_IMAGES_DIR = "/home/user/ros_workspace/src/vision_pipeline/data/training_dataset.yolov8/test/images"
@@ -163,7 +172,7 @@ def build_filtered_test_dataset(model_class_names, original_class_names, tmp_dir
         if original_idx is not None:
             original_to_model_index[original_idx] = model_idx
         # Se una classe del modello non esiste proprio nel dataset di
-        # riferimento (non dovrebbe succedere per questi 4 modelli, sono
+        # riferimento (non dovrebbe succedere per questi modelli, sono
         # tutti addestrati su varianti dello stesso set di oggetti), resta
         # semplicemente senza nessun esempio positivo nel ground truth
         # filtrato -- val() la tratta come classe senza supporto, non crasha.
@@ -368,6 +377,46 @@ def evaluate_one_model(model_path, original_class_names):
             print("\nATTENZIONE: nessuna delle classi grasping-relevant è nota a questo modello o nel test set.")
 
         # ─────────────────────────────────────────────
+        # SALVATAGGIO DELLE METRICHE NUMERICHE SU FILE
+        # Ultralytics genera solo i plot (PNG) e predictions.json (predizioni
+        # grezze) -- NON un file coi valori aggregati/per-classe di P, R,
+        # mAP50, mAP50-95. Li scriviamo qui, cosi' sono riusabili senza
+        # rilanciare la valutazione (tabelle tesi, confronti tra modelli).
+        # ─────────────────────────────────────────────
+        metrics_summary = {
+            "model": model_stem,
+            "model_path": model_path,
+            "task": model.task,
+            "classes": model_class_names_normalized,
+            "aggregate": {
+                "map50": round(float(metrics.box.map50), 4),
+                "map50_95": round(float(metrics.box.map), 4),
+                "precision_mean": round(float(metrics.box.p.mean()), 4),
+                "recall_mean": round(float(metrics.box.r.mean()), 4),
+            },
+            "per_class": {},
+            "grasping_relevant": {},
+        }
+        for i, class_idx in enumerate(ap_class_index):
+            name = model_class_names_normalized[int(class_idx)]
+            metrics_summary["per_class"][name] = {
+                "precision": round(float(precision_per_class[i]), 4),
+                "recall": round(float(recall_per_class[i]), 4),
+                "map50": round(float(ap50_per_class[i]), 4),
+                "map50_95": round(float(maps_per_class[int(class_idx)]), 4),
+            }
+        for name in GRASP_RELEVANT_CLASSES:
+            if name in per_class_map5095:
+                metrics_summary["grasping_relevant"][name] = round(float(per_class_map5095[name]), 4)
+        if grasp_maps:
+            metrics_summary["grasping_relevant"]["mean"] = round(sum(grasp_maps) / len(grasp_maps), 4)
+
+        metrics_summary_path = os.path.join(str(metrics.save_dir), "metrics_summary.json")
+        with open(metrics_summary_path, "w") as f:
+            json.dump(metrics_summary, f, indent=2)
+        print(f"\nMetriche numeriche salvate in: {metrics_summary_path}")
+
+        # ─────────────────────────────────────────────
         # DOVE TROVARE I PLOT GENERATI DA ULTRALYTICS
         # ─────────────────────────────────────────────
         print("\n" + "=" * 60)
@@ -382,6 +431,7 @@ def evaluate_one_model(model_path, original_class_names):
         print("  - BoxPR_curve.png  (Precision-Recall)")
         print("  - val_batch*_labels.jpg / val_batch*_pred.jpg  (campione a griglia, poche immagini)")
         print("  - predictions.json (risultati in formato COCO, se save_json=True)")
+        print("  - metrics_summary.json (P, R, mAP50, mAP50-95: aggregate, per classe, grasping-relevant)")
 
     # ─────────────────────────────────────────────
     # INFERENCE SU TUTTE LE IMMAGINI DI TEST CON BOUNDING BOX DISEGNATI

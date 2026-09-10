@@ -1,0 +1,64 @@
+{
+  "model": "sweep_best",
+  "model_path": "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt",
+  "task": "detect",
+  "classes": [
+    "aruco marker",
+    "biscuits pack",
+    "bookshelf",
+    "coke can",
+    "dinner table",
+    "pringles can"
+  ],
+  "aggregate": {
+    "map50": 0.9933,
+    "map50_95": 0.9475,
+    "precision_mean": 0.9984,
+    "recall_mean": 0.9928
+  },
+  "per_class": {
+    "aruco marker": {
+      "precision": 1.0,
+      "recall": 0.9912,
+      "map50": 0.995,
+      "map50_95": 0.9397
+    },
+    "biscuits pack": {
+      "precision": 0.9995,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.9251
+    },
+    "bookshelf": {
+      "precision": 0.9978,
+      "recall": 0.988,
+      "map50": 0.985,
+      "map50_95": 0.9722
+    },
+    "coke can": {
+      "precision": 1.0,
+      "recall": 0.9777,
+      "map50": 0.995,
+      "map50_95": 0.919
+    },
+    "dinner table": {
+      "precision": 0.9975,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.989
+    },
+    "pringles can": {
+      "precision": 0.9957,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.94
+    }
+  },
+  "grasping_relevant": {
+    "coke can": 0.919,
+    "pringles can": 0.94,
+    "biscuits pack": 0.9251,
+    "aruco marker": 0.9397,
+    "mean": 0.9309
+  }
+}
