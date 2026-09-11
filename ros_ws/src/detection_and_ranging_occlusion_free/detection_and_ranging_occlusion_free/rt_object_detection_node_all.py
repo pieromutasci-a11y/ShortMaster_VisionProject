@@ -73,16 +73,17 @@ MAX_RANGE = 3.0
 DEPTH_PATCH_FRACTION = 0.3
 
 # Confronto tra modelli in corso (vedi vision_pipeline/models/): al
-# momento in uso il modello di SEGMENTAZIONE (YOLOv8-seg, non detection) --
-# per tornare a un altro modello commentare/scommentare la riga giusta tra
+# momento in uso il modello dello sweep W&B (Dataset Esteso ottimizzato,
+# il migliore per mAP50-95, vedi capitolo modelli di visione) -- per
+# tornare a un altro modello commentare/scommentare la riga giusta tra
 # queste. Un modello -seg pubblica anche le maschere per istanza oltre alle
 # bounding box, ma qui contano solo queste ultime (detection_results.boxes)
 # -- stesso codice, nessuna modifica necessaria per usarlo. detection_results.plot()
 # in piu' disegnera' anche i contorni della maschera sul frame annotato.
-# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
+MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/wandb/runs/sqkfh2ka/training/xl1874f6/weights/best.pt"
 # MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/small_omogeneous_dataset_model_best.pt"
 # MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/small_eterogeneous_dataset_model_best.pt"
-MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt"
+# MODEL_WEIGHTS_PATH = "/home/user/ros_workspace/src/vision_pipeline/models/segmentation_model_best.pt"
 
 
 def topic_slug(class_name):
