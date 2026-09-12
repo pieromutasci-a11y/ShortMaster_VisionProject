@@ -1,0 +1,277 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="indoor_multi_room">
+
+    <physics type="ode">
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>20</iters>
+          <sor>1.0</sor>
+        </solver>
+        <constraints>
+          <cfm>0.0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.0</contact_surface_layer>
+        </constraints>
+      </ode>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+    </physics>
+
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- <model name="wall_outer_north">
+      <pose>0 7 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>20.4 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>20.4 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <model name="wall_outer_south">
+      <pose>0 -7 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>20.4 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>20.4 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <model name="wall_outer_east">
+      <pose>10 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 14.4 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 14.4 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <model name="wall_outer_west">
+      <pose>-10 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 14.4 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 14.4 2.5</size></box></geometry></visual>
+      </link>
+    </model> -->
+
+    <!-- Lato sinistro (x = -1.5) -->
+    <!-- <model name="wall_corr_left_s">
+      <pose>-1.5 -5.625 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_corr_left_m">
+      <pose>-1.5 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 5.5 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 5.5 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_corr_left_n">
+      <pose>-1.5 5.625 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></visual>
+      </link>
+    </model> -->
+
+    <!-- Lato destro (x = +1.5) -->
+    <!-- <model name="wall_corr_right_s">
+      <pose>1.5 -5.625 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_corr_right_m">
+      <pose>1.5 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 5.5 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 5.5 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_corr_right_n">
+      <pose>1.5 5.625 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 2.75 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <model name="wall_inner_s1s2_w">
+      <pose>-8.375 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3.25 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3.25 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_inner_s1s2_e">
+      <pose>-3.375 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3.75 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3.75 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <model name="wall_inner_s3s4_w">
+      <pose>3.375 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3.75 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3.75 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_inner_s3s4_e">
+      <pose>8.375 0 1.25  0 0 0</pose><static>true</static>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3.25 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3.25 0.2 2.5</size></box></geometry></visual>
+      </link>
+    </model> -->
+
+    <!-- ==================== S1 (commented out) ==================== -->
+    <!--
+    <include><uri>model://arm_chair</uri><name>s1_arm_chair</name><pose>-7.0 -6.3 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://goetz_sofa</uri><name>s1_sofa</name><pose>-4.0 -5.8 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://floor_lamp</uri><name>s1_floor_lamp</name><pose>-8.5 -1.5 0.0  0 0 0</pose></include>
+    <include><uri>model://sideboard</uri><name>s1_sideboard</name><pose>-8.5 -0.5 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://reemc_bookshelf</uri><name>s1_bookshelf</name><pose>-3.0 -0.5 0.0  0 0 3.1416</pose></include>
+    -->
+
+    <!-- ==================== S2 (commented out) ==================== -->
+    <!--
+    <include><uri>model://kitchen_table</uri><name>s2_table</name><pose>-6.0 4.0 0.0  0 0 0</pose></include>
+    <include><uri>model://dining_chair</uri><name>s2_chair_s</name><pose>-6.2 5.2 0.0  0 0 -1.5708</pose></include>
+    <include><uri>model://dining_chair</uri><name>s2_chair_n</name><pose>-6.2 4.5 0.0  0 0 -1.5708</pose></include>
+    <include><uri>model://dining_chair</uri><name>s2_chair_e</name><pose>-5.1 4.3 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://dining_chair</uri><name>s2_chair_w</name><pose>-7.5 6.4 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://tv</uri><name>s2_tv</name><pose>-9.5 5.0 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://sideboard</uri><name>s2_sideboard</name><pose>-3.0 6.5 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://floor_lamp</uri><name>s2_floor_lamp</name><pose>-9.0 1.0 0.0  0 0 0</pose></include>
+    <include><uri>model://reemc_cabinet</uri><name>s2_cabinet</name><pose>-8.0 0.5 0.0  0 0 0</pose></include>
+    <include><uri>model://reemc_bookshelf</uri><name>s2_bookshelf</name><pose>-3.5 0.5 0.0  0 0 0</pose></include>
+    -->
+
+    <include>
+      <uri>model://table_0m8</uri>
+      <name>s3_table</name>
+      <pose>5.0 5.0 0.0  0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://aruco_marker_original_63</uri>
+      <name>s3_aruco</name>
+      <pose>4.5 4.60 0.80  1.5708 0 0</pose>
+      <static>1</static>
+    </include>
+
+
+    <include>
+      <uri>model://cocacola</uri>
+      <name>s3_cocacola</name>
+      <pose>5.0 4.65 0.815  0 0 0</pose>
+    </include>
+
+
+    <include>
+      <uri>model://pringles</uri>
+      <name>s3_pringles</name>
+      <pose>5.25 5.05 0.815  0 0 0.4</pose>
+    </include>
+
+    <include>
+      <uri>model://biscuits_pack</uri>
+      <name>s3_biscuits</name>
+      <pose>4.90 4.95 0.815  0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://reemc_bookshelf</uri>
+      <name>s3_bookshelf</name>
+      <pose>6.5 4.0 0.0  0 0 -1.5708</pose>
+    </include>
+
+    <!-- <include>
+      <uri>model://reemc_cabinet</uri>
+      <name>s3_cabinet</name>
+      <pose>8.5 6.3 0.0  0 0 0</pose>
+    </include> -->
+
+    <!-- <include>
+      <uri>model://macrolink_small_table</uri>
+      <name>s3_small_table</name>
+      <pose>2.5 5.5 0.0  0 0 0</pose>
+    </include> -->
+
+    <!-- <include>
+      <uri>model://aruco_marker_original_238</uri>
+      <name>s3_small_table_aruco</name>
+      <pose>2.5 5.125 0.52  1.5708 0 0</pose>
+      <static>1</static>
+    </include>
+
+    <include>
+      <uri>model://pringles2</uri>
+      <name>s3_small_pringles</name>
+      <pose>2.5 5.55 0.520  0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://biscuits_pack</uri>
+      <name>s3_small_biscuits</name>
+      <pose>2.3 5.65 0.520  0 0 0.5</pose>
+    </include>
+    <include>
+      <uri>model://bifrutas_tropical_can</uri>
+      <name>s3_small_bifrutas</name>
+      <pose>2.7 5.65 0.520  0 0 0</pose>
+    </include> -->
+
+    <!-- ==================== S4 + corridoio (commented out) ==================== -->
+    <!--
+    <include><uri>model://kitchen_table</uri><name>s4_meeting_table</name><pose>5.5 -3.5 0.0  0 0 1.57</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_s1</name><pose>4.4 -3.8 0.0  0 0 0</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_s2</name><pose>5.0 -3.8 0.0  0 0 0</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_n1</name><pose>4.7 -2.4 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_n2</name><pose>5.3 -2.4 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_e</name><pose>9.4 -1.5 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://dining_chair</uri><name>s4_chair_w</name><pose>8.0 -6.4 0.0  0 0 0</pose></include>
+    <include><uri>model://arm_chair</uri><name>s4_arm_chair</name><pose>2.5 -6.3 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://wardrobe</uri><name>s4_wardrobe</name><pose>9.5 -5.5 0.0  0 0 1.5708</pose></include>
+    <include><uri>model://sideboard</uri><name>s4_credenza</name><pose>3.5 -0.5 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://reemc_bookshelf</uri><name>s4_bookshelf</name><pose>8.0 -0.5 0.0  0 0 3.1416</pose></include>
+    <include><uri>model://floor_lamp</uri><name>s4_floor_lamp</name><pose>9.0 -6.5 0.0  0 0 0</pose></include>
+    <include><uri>model://floor_lamp</uri><name>corr_lamp_s</name><pose>0.0 -5.0 0.0  0 0 0</pose></include>
+    <include><uri>model://floor_lamp</uri><name>corr_lamp_n</name><pose>0.0 5.0 0.0  0 0 0</pose></include>
+    <include><uri>model://ikea_folke_chair</uri><name>s1_ikea_chair</name><pose>-9.4 -4.0 0.0  0 0 0</pose></include>
+    <include><uri>model://sofa</uri><name>s4_sofa</name><pose>5.5 -6.0 0.0  0 0 3.1416</pose></include>
+    -->
+
+    <!-- ==================== ArUco S1/S2/S4/corridoio (commented out) ==================== -->
+    <!--
+    <include><uri>model://aruco_marker_original_26</uri><name>aruco_s1_south</name><pose>-5.0 -6.9 1.2  -1.5708 0 0</pose><static>1</static></include>
+    <include><uri>model://aruco_marker_original_238</uri><name>aruco_s2_west</name><pose>-9.9 3.0 1.2  1.5708 0 1.5708</pose><static>1</static></include>
+    <include><uri>model://aruco_marker_original_26</uri><name>aruco_s4_south</name><pose>5.5 -6.9 1.2  -1.5708 0 0</pose><static>1</static></include>
+    <include><uri>model://aruco_marker_original_582</uri><name>aruco_s4_east</name><pose>9.9 -4.5 1.2  1.5708 0 -1.5708</pose><static>1</static></include>
+    <include><uri>model://aruco_marker_original_63</uri><name>aruco_corr</name><pose>1.4 0.0 1.2  1.5708 0 -1.5708</pose><static>1</static></include>
+    -->
+
+    <!-- ArUco S3 nord (attivo) -->
+    <!-- <include>
+      <uri>model://aruco_marker_original_582</uri>
+      <name>aruco_s3_north</name>
+      <pose>5.0 6.9 1.2  1.5708 0 0</pose>
+      <static>1</static>
+    </include> -->
+
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>5 -2 10  0 0.9 1.5708</pose>
+        <view_controller>orbit</view_controller>
+      </camera>
+    </gui>
+
+  </world>
+</sdf>

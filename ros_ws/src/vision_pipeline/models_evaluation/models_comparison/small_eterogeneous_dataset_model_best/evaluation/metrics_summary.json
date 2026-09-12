@@ -1,0 +1,64 @@
+{
+  "model": "small_eterogeneous_dataset_model_best",
+  "model_path": "/home/user/ros_workspace/src/vision_pipeline/models/small_eterogeneous_dataset_model_best.pt",
+  "task": "detect",
+  "classes": [
+    "aruco marker",
+    "biscuits pack",
+    "bookshelf",
+    "coke can",
+    "dinner table",
+    "pringles can"
+  ],
+  "aggregate": {
+    "map50": 0.9776,
+    "map50_95": 0.8353,
+    "precision_mean": 0.9537,
+    "recall_mean": 0.9533
+  },
+  "per_class": {
+    "aruco marker": {
+      "precision": 0.8878,
+      "recall": 0.8925,
+      "map50": 0.9658,
+      "map50_95": 0.7942
+    },
+    "biscuits pack": {
+      "precision": 0.9891,
+      "recall": 1.0,
+      "map50": 0.9949,
+      "map50_95": 0.8318
+    },
+    "bookshelf": {
+      "precision": 0.9806,
+      "recall": 0.988,
+      "map50": 0.984,
+      "map50_95": 0.8309
+    },
+    "coke can": {
+      "precision": 0.8896,
+      "recall": 0.8955,
+      "map50": 0.9332,
+      "map50_95": 0.7714
+    },
+    "dinner table": {
+      "precision": 0.9855,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.9406
+    },
+    "pringles can": {
+      "precision": 0.9893,
+      "recall": 0.9436,
+      "map50": 0.9928,
+      "map50_95": 0.8431
+    }
+  },
+  "grasping_relevant": {
+    "coke can": 0.7714,
+    "pringles can": 0.8431,
+    "biscuits pack": 0.8318,
+    "aruco marker": 0.7942,
+    "mean": 0.8101
+  }
+}

@@ -1,0 +1,228 @@
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_setup.py:_flush():81] Current SDK version is 0.28.1
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_setup.py:_flush():81] Configure stats pid to 79
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:setup_run_log_directory():729] Logging user logs to /home/user/ros_workspace/wandb/wandb/run-20260727_160134-gz7jcbjo/logs/debug.log
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:setup_run_log_directory():730] Logging internal logs to /home/user/ros_workspace/wandb/wandb/run-20260727_160134-gz7jcbjo/logs/debug-internal.log
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():772] calling init triggers
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():777] wandb.init called with sweep_config: {'box_gain': 6.239970307462913, 'cls_gain': 0.5668000916527465, 'copy_paste': 0.026978942519114136, 'dfl_gain': 1.223518513009883, 'imgsz': 640, 'lr0': 0.004404264232585504, 'lrf': 0.016629241402186013, 'momentum': 0.8502367954376788, 'mosaic': 0.9021525849204934, 'optimizer': 'SGD', 'scale': 0.2121303849232468, 'translate': 0.12366954169965504, 'weight_decay': 0.0003536717927338363}
+config: {'_wandb': {}}
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():820] starting backend
+2026-07-27 16:01:34,546 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():835] sending inform_init request
+2026-07-27 16:01:34,655 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():840] backend started and connected
+2026-07-27 16:01:34,655 INFO    Thread-45 (_run_job):79 [wandb_run.py:_config_callback():1346] config_cb None None {'box_gain': 6.239970307462913, 'cls_gain': 0.5668000916527465, 'copy_paste': 0.026978942519114136, 'dfl_gain': 1.223518513009883, 'imgsz': 640, 'lr0': 0.004404264232585504, 'lrf': 0.016629241402186013, 'momentum': 0.8502367954376788, 'mosaic': 0.9021525849204934, 'optimizer': 'SGD', 'scale': 0.2121303849232468, 'translate': 0.12366954169965504, 'weight_decay': 0.0003536717927338363}
+2026-07-27 16:01:34,656 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():910] updated telemetry
+2026-07-27 16:01:34,659 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():933] communicating run to backend with 90.0 second timeout
+2026-07-27 16:01:35,462 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():978] starting run threads in backend
+2026-07-27 16:01:35,662 INFO    Thread-45 (_run_job):79 [wandb_run.py:_console_start():2621] atexit reg
+2026-07-27 16:01:35,662 INFO    Thread-45 (_run_job):79 [wandb_run.py:_redirect():2471] redirect: wrap_raw
+2026-07-27 16:01:35,662 INFO    Thread-45 (_run_job):79 [wandb_run.py:_redirect():2540] Wrapping output streams.
+2026-07-27 16:01:35,662 INFO    Thread-45 (_run_job):79 [wandb_run.py:_redirect():2563] Redirects installed.
+2026-07-27 16:01:35,663 INFO    Thread-45 (_run_job):79 [wandb_init.py:init():1016] run started, returning control to user process
+2026-07-27 16:33:07,626 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:34:22,750 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:35:34,137 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:37:28,448 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:38:48,591 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:41:52,214 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:48:24,561 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:49:29,573 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:50:34,588 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:51:39,598 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:52:44,608 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:53:49,621 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:54:54,630 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:55:59,641 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:57:04,656 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.
+2026-07-27 16:58:09,667 ERROR   Thread-2 (_heartbeat):79 [internal_api.py:agent_heartbeat():2575] [no run ID] Error communicating with W&B.
+Traceback (most recent call last):
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 2561, in agent_heartbeat
+    response = self.execute(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/internal/internal_api.py", line 324, in execute
+    return self._service_api.execute_graphql(*args, **kwargs)  # type: ignore[return-value]
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 158, in execute_graphql
+    response = self.send_api_request(
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/apis/public/service_api.py", line 80, in send_api_request
+    return session.connection.api_request(request, timeout=timeout)
+  File "/home/user/.local/lib/python3.10/site-packages/wandb/sdk/lib/service/service_connection.py", line 252, in api_request
+    raise WandbApiFailedError(
+wandb.sdk.lib.service.service_connection.WandbApiFailedError: Failed to execute API request: the service process is busy and did not respond in time.

@@ -1,0 +1,20 @@
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_setup.py:_flush():81] Current SDK version is 0.28.1
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_setup.py:_flush():81] Configure stats pid to 45
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:setup_run_log_directory():729] Logging user logs to /home/user/ros_workspace/wandb/wandb/run-20260728_125130-rkv1k3gq/logs/debug.log
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:setup_run_log_directory():730] Logging internal logs to /home/user/ros_workspace/wandb/wandb/run-20260728_125130-rkv1k3gq/logs/debug-internal.log
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():772] calling init triggers
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():777] wandb.init called with sweep_config: {'box_gain': 7.39371749354877, 'cls_gain': 0.4021618928097052, 'copy_paste': 0.14131804248985066, 'dfl_gain': 1.2455566575893742, 'imgsz': 640, 'lr0': 0.0015893183646476514, 'lrf': 0.02844856293439535, 'momentum': 0.968894417111601, 'mosaic': 0.7062605088944627, 'optimizer': 'AdamW', 'scale': 0.25559528811605836, 'translate': 0.14507829546263346, 'weight_decay': 0.0004999737681666324}
+config: {'_wandb': {}}
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():820] starting backend
+2026-07-28 12:51:30,805 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():835] sending inform_init request
+2026-07-28 12:51:30,920 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():840] backend started and connected
+2026-07-28 12:51:30,921 INFO    Thread-129 (_run_job):45 [wandb_run.py:_config_callback():1346] config_cb None None {'box_gain': 7.39371749354877, 'cls_gain': 0.4021618928097052, 'copy_paste': 0.14131804248985066, 'dfl_gain': 1.2455566575893742, 'imgsz': 640, 'lr0': 0.0015893183646476514, 'lrf': 0.02844856293439535, 'momentum': 0.968894417111601, 'mosaic': 0.7062605088944627, 'optimizer': 'AdamW', 'scale': 0.25559528811605836, 'translate': 0.14507829546263346, 'weight_decay': 0.0004999737681666324}
+2026-07-28 12:51:30,922 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():910] updated telemetry
+2026-07-28 12:51:30,924 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():933] communicating run to backend with 90.0 second timeout
+2026-07-28 12:51:31,821 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():978] starting run threads in backend
+2026-07-28 12:51:32,102 INFO    Thread-129 (_run_job):45 [wandb_run.py:_console_start():2621] atexit reg
+2026-07-28 12:51:32,102 INFO    Thread-129 (_run_job):45 [wandb_run.py:_redirect():2471] redirect: wrap_raw
+2026-07-28 12:51:32,102 INFO    Thread-129 (_run_job):45 [wandb_run.py:_redirect():2540] Wrapping output streams.
+2026-07-28 12:51:32,103 INFO    Thread-129 (_run_job):45 [wandb_run.py:_redirect():2563] Redirects installed.
+2026-07-28 12:51:32,104 INFO    Thread-129 (_run_job):45 [wandb_init.py:init():1016] run started, returning control to user process

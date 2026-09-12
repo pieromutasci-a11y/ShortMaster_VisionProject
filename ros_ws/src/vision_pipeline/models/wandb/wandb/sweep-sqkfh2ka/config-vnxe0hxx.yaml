@@ -1,0 +1,28 @@
+wandb_version: 1
+
+box_gain:
+  value: 9.15261674605043
+cls_gain:
+  value: 0.5977021257468845
+copy_paste:
+  value: 0.08800671702514559
+dfl_gain:
+  value: 1.9010357469980013
+imgsz:
+  value: 640
+lr0:
+  value: 0.001169965823052358
+lrf:
+  value: 0.14153415884719123
+momentum:
+  value: 0.9369745151684498
+mosaic:
+  value: 0.6889107020025529
+optimizer:
+  value: SGD
+scale:
+  value: 0.4079833876319236
+translate:
+  value: 0.16951413232741078
+weight_decay:
+  value: 0.0007873689224165677

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>tiago_pro_rgbd_sensors</name>
+  <version>2.14.0</version>
+  <description>tiago_pro-specific rgbd sensors launch and config files.</description>
+  <author email="sergio.moyano@pal-robotics.com">Sergio Moyano</author>
+  <maintainer email="sergio.moyano@pal-robotics.com">Sergio Moyano</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <build_depend condition="$PAL_DISTRO >= alum">pal_module_cmake</build_depend>
+  <build_depend condition="$PAL_DISTRO >= alum">pal_configuration_cmake</build_depend>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>diagnostic_updater</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>rclcpp_components</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend condition="$PAL_DISTRO >= alum">realsense_camera_cfg</exec_depend>
+  <exec_depend condition="$PAL_DISTRO >= alum">pcl_ros</exec_depend>
+  <exec_depend condition="$PAL_DISTRO >= alum">pal_pcl</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

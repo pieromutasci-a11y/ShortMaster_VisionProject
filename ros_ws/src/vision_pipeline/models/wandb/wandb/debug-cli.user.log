@@ -1,0 +1,291 @@
+2026-07-27 17:01:31 INFO Reached EOF.
+2026-07-27 17:01:31 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:01:39 INFO Running runs: []
+2026-07-27 17:01:40 INFO Agent received command: run
+2026-07-27 17:01:40 INFO Agent starting run with config:
+	box_gain: 8.60908607591503
+	cls_gain: 0.6311956534028079
+	copy_paste: 0.04800224649525007
+	dfl_gain: 1.6829748968489506
+	imgsz: 640
+	lr0: 0.0011907576599183513
+	lrf: 0.130270442707296
+	momentum: 0.8852888625880246
+	mosaic: 0.8376309402947161
+	optimizer: SGD
+	scale: 0.0673654444517574
+	translate: 0.1918714480467729
+	weight_decay: 0.00019399473703876833
+2026-07-27 17:01:40 INFO About to run command: /usr/bin/env python  --box_gain=8.60908607591503 --cls_gain=0.6311956534028079 --copy_paste=0.04800224649525007 --dfl_gain=1.6829748968489506 --imgsz=640 --lr0=0.0011907576599183513 --lrf=0.130270442707296 --momentum=0.8852888625880246 --mosaic=0.8376309402947161 --optimizer=SGD --scale=0.0673654444517574 --translate=0.1918714480467729 --weight_decay=0.00019399473703876833
+2026-07-27 17:01:45 INFO Running runs: ['0yvwr733']
+2026-07-27 17:01:45 INFO Cleaning up finished run: 0yvwr733
+2026-07-27 17:01:45 INFO Reached EOF.
+2026-07-27 17:01:45 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:01:49 INFO Agent received command: run
+2026-07-27 17:01:49 INFO Agent starting run with config:
+	box_gain: 7.535457096054067
+	cls_gain: 0.3325653247308029
+	copy_paste: 0.016027570953200464
+	dfl_gain: 1.694912028600457
+	imgsz: 640
+	lr0: 0.0010850378057883443
+	lrf: 0.106741256521111
+	momentum: 0.8967734738262739
+	mosaic: 0.8928243290046161
+	optimizer: AdamW
+	scale: 0.3503938475786359
+	translate: 0.18887731703394509
+	weight_decay: 0.00031095508972415207
+2026-07-27 17:01:49 INFO About to run command: /usr/bin/env python  --box_gain=7.535457096054067 --cls_gain=0.3325653247308029 --copy_paste=0.016027570953200464 --dfl_gain=1.694912028600457 --imgsz=640 --lr0=0.0010850378057883443 --lrf=0.106741256521111 --momentum=0.8967734738262739 --mosaic=0.8928243290046161 --optimizer=AdamW --scale=0.3503938475786359 --translate=0.18887731703394509 --weight_decay=0.00031095508972415207
+2026-07-27 17:01:54 INFO Running runs: ['6jw359d0']
+2026-07-27 17:01:54 INFO Cleaning up finished run: 6jw359d0
+2026-07-27 17:01:54 INFO Reached EOF.
+2026-07-27 17:01:54 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:01:57 INFO Agent received command: run
+2026-07-27 17:01:57 INFO Agent starting run with config:
+	box_gain: 7.39371749354877
+	cls_gain: 0.4021618928097052
+	copy_paste: 0.14131804248985066
+	dfl_gain: 1.2455566575893742
+	imgsz: 640
+	lr0: 0.0015893183646476514
+	lrf: 0.02844856293439535
+	momentum: 0.968894417111601
+	mosaic: 0.7062605088944627
+	optimizer: AdamW
+	scale: 0.25559528811605836
+	translate: 0.14507829546263346
+	weight_decay: 0.0004999737681666324
+2026-07-27 17:01:57 INFO About to run command: /usr/bin/env python  --box_gain=7.39371749354877 --cls_gain=0.4021618928097052 --copy_paste=0.14131804248985066 --dfl_gain=1.2455566575893742 --imgsz=640 --lr0=0.0015893183646476514 --lrf=0.02844856293439535 --momentum=0.968894417111601 --mosaic=0.7062605088944627 --optimizer=AdamW --scale=0.25559528811605836 --translate=0.14507829546263346 --weight_decay=0.0004999737681666324
+2026-07-27 17:02:02 INFO Running runs: ['w3kgiam8']
+2026-07-27 17:02:02 ERROR Detected 3 failed runs in the first 60 seconds, shutting down.
+2026-07-27 17:02:02 INFO To disable this check set WANDB_AGENT_DISABLE_FLAPPING=true
+2026-07-27 17:02:02 INFO Reached EOF.
+2026-07-27 17:02:02 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:02:35 INFO Running runs: []
+2026-07-27 17:02:39 INFO Agent received command: run
+2026-07-27 17:02:39 INFO Agent starting run with config:
+	box_gain: 9.515814572515415
+	cls_gain: 0.6699551762768705
+	copy_paste: 0.14260497936684133
+	dfl_gain: 1.2032825489879546
+	imgsz: 640
+	lr0: 0.0017631608060256457
+	lrf: 0.1922343794262276
+	momentum: 0.9619777434105492
+	mosaic: 0.7619173728476649
+	optimizer: SGD
+	scale: 0.4299850450573275
+	translate: 0.07673821406733712
+	weight_decay: 0.00036027931720155937
+2026-07-27 17:02:39 INFO About to run command: /usr/bin/env python  --box_gain=9.515814572515415 --cls_gain=0.6699551762768705 --copy_paste=0.14260497936684133 --dfl_gain=1.2032825489879546 --imgsz=640 --lr0=0.0017631608060256457 --lrf=0.1922343794262276 --momentum=0.9619777434105492 --mosaic=0.7619173728476649 --optimizer=SGD --scale=0.4299850450573275 --translate=0.07673821406733712 --weight_decay=0.00036027931720155937
+2026-07-27 17:02:44 INFO Running runs: ['ileelnxi']
+2026-07-27 17:02:44 INFO Cleaning up finished run: ileelnxi
+2026-07-27 17:02:44 INFO Reached EOF.
+2026-07-27 17:02:44 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:02:48 INFO Agent received command: run
+2026-07-27 17:02:48 INFO Agent starting run with config:
+	box_gain: 8.348983643115233
+	cls_gain: 0.4893414477110723
+	copy_paste: 0.029756232473549336
+	dfl_gain: 1.5769729321021484
+	imgsz: 640
+	lr0: 0.0034748060408031378
+	lrf: 0.17532224691770787
+	momentum: 0.8837411026422975
+	mosaic: 0.9013357743488926
+	optimizer: SGD
+	scale: 0.2593143389380987
+	translate: 0.10241340619257068
+	weight_decay: 0.0002560782486974671
+2026-07-27 17:02:48 INFO About to run command: /usr/bin/env python  --box_gain=8.348983643115233 --cls_gain=0.4893414477110723 --copy_paste=0.029756232473549336 --dfl_gain=1.5769729321021484 --imgsz=640 --lr0=0.0034748060408031378 --lrf=0.17532224691770787 --momentum=0.8837411026422975 --mosaic=0.9013357743488926 --optimizer=SGD --scale=0.2593143389380987 --translate=0.10241340619257068 --weight_decay=0.0002560782486974671
+2026-07-27 17:02:49 INFO Reached EOF.
+2026-07-27 17:02:49 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:04:57 INFO Reached EOF.
+2026-07-27 17:04:57 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:05:58 INFO Running runs: []
+2026-07-27 17:06:01 INFO Agent received command: run
+2026-07-27 17:06:01 INFO Agent starting run with config:
+	box_gain: 6.85453375739842
+	cls_gain: 0.5426106822539555
+	copy_paste: 0.2930232307050281
+	dfl_gain: 1.870981665648851
+	imgsz: 640
+	lr0: 0.0010101010312927178
+	lrf: 0.07612250494579231
+	momentum: 0.8563766221016383
+	mosaic: 0.8988910167737754
+	optimizer: AdamW
+	scale: 0.05746350408795492
+	translate: 0.08083171200827216
+	weight_decay: 0.000993886831318916
+2026-07-27 17:06:01 INFO About to run command: /usr/bin/env python  --box_gain=6.85453375739842 --cls_gain=0.5426106822539555 --copy_paste=0.2930232307050281 --dfl_gain=1.870981665648851 --imgsz=640 --lr0=0.0010101010312927178 --lrf=0.07612250494579231 --momentum=0.8563766221016383 --mosaic=0.8988910167737754 --optimizer=AdamW --scale=0.05746350408795492 --translate=0.08083171200827216 --weight_decay=0.000993886831318916
+2026-07-27 17:06:06 INFO Running runs: ['tfa7z7za']
+2026-07-27 17:06:06 INFO Cleaning up finished run: tfa7z7za
+2026-07-27 17:06:06 INFO Reached EOF.
+2026-07-27 17:06:06 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:06:16 INFO Agent received command: run
+2026-07-27 17:06:16 INFO Agent starting run with config:
+	box_gain: 8.960517265695927
+	cls_gain: 0.49922691604416414
+	copy_paste: 0.1235406740177774
+	dfl_gain: 1.8605570560753752
+	imgsz: 640
+	lr0: 0.009206756871820062
+	lrf: 0.07432642072199888
+	momentum: 0.9199189508285376
+	mosaic: 0.8342385964103642
+	optimizer: AdamW
+	scale: 0.07215274527862464
+	translate: 0.18454670343313867
+	weight_decay: 0.0009733404359049818
+2026-07-27 17:06:16 INFO About to run command: /usr/bin/env python  --box_gain=8.960517265695927 --cls_gain=0.49922691604416414 --copy_paste=0.1235406740177774 --dfl_gain=1.8605570560753752 --imgsz=640 --lr0=0.009206756871820062 --lrf=0.07432642072199888 --momentum=0.9199189508285376 --mosaic=0.8342385964103642 --optimizer=AdamW --scale=0.07215274527862464 --translate=0.18454670343313867 --weight_decay=0.0009733404359049818
+2026-07-27 17:06:21 INFO Running runs: ['tv0yi2v7']
+2026-07-27 17:06:21 INFO Cleaning up finished run: tv0yi2v7
+2026-07-27 17:06:21 INFO Reached EOF.
+2026-07-27 17:06:21 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:06:23 INFO Agent received command: run
+2026-07-27 17:06:23 INFO Agent starting run with config:
+	box_gain: 8.559434620243891
+	cls_gain: 0.5392083470413094
+	copy_paste: 0.2246237512323295
+	dfl_gain: 1.5242612136589218
+	imgsz: 640
+	lr0: 0.001484459229951018
+	lrf: 0.015236662302553406
+	momentum: 0.9755006268085632
+	mosaic: 0.8311312804711657
+	optimizer: AdamW
+	scale: 0.12254412705630148
+	translate: 0.06455244943216183
+	weight_decay: 0.00011759029359338114
+2026-07-27 17:06:23 INFO About to run command: /usr/bin/env python  --box_gain=8.559434620243891 --cls_gain=0.5392083470413094 --copy_paste=0.2246237512323295 --dfl_gain=1.5242612136589218 --imgsz=640 --lr0=0.001484459229951018 --lrf=0.015236662302553406 --momentum=0.9755006268085632 --mosaic=0.8311312804711657 --optimizer=AdamW --scale=0.12254412705630148 --translate=0.06455244943216183 --weight_decay=0.00011759029359338114
+2026-07-27 17:06:28 INFO Running runs: ['ea489i61']
+2026-07-27 17:06:28 ERROR Detected 3 failed runs in the first 60 seconds, shutting down.
+2026-07-27 17:06:28 INFO To disable this check set WANDB_AGENT_DISABLE_FLAPPING=true
+2026-07-27 17:06:28 INFO Reached EOF.
+2026-07-27 17:06:28 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:07:54 INFO Running runs: []
+2026-07-27 17:07:55 INFO Agent received command: run
+2026-07-27 17:07:55 INFO Agent starting run with config:
+	box_gain: 9.15261674605043
+	cls_gain: 0.5977021257468845
+	copy_paste: 0.08800671702514559
+	dfl_gain: 1.9010357469980013
+	imgsz: 640
+	lr0: 0.001169965823052358
+	lrf: 0.14153415884719123
+	momentum: 0.9369745151684498
+	mosaic: 0.6889107020025529
+	optimizer: SGD
+	scale: 0.4079833876319236
+	translate: 0.16951413232741078
+	weight_decay: 0.0007873689224165677
+2026-07-27 17:07:55 INFO About to run command: /usr/bin/env python  --box_gain=9.15261674605043 --cls_gain=0.5977021257468845 --copy_paste=0.08800671702514559 --dfl_gain=1.9010357469980013 --imgsz=640 --lr0=0.001169965823052358 --lrf=0.14153415884719123 --momentum=0.9369745151684498 --mosaic=0.6889107020025529 --optimizer=SGD --scale=0.4079833876319236 --translate=0.16951413232741078 --weight_decay=0.0007873689224165677
+2026-07-27 17:08:00 INFO Running runs: ['r2xnxja8']
+2026-07-27 17:08:00 INFO Cleaning up finished run: r2xnxja8
+2026-07-27 17:08:00 INFO Reached EOF.
+2026-07-27 17:08:00 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:08:03 INFO Agent received command: run
+2026-07-27 17:08:03 INFO Agent starting run with config:
+	box_gain: 6.679360343295507
+	cls_gain: 0.516110583366607
+	copy_paste: 0.2802954911288572
+	dfl_gain: 1.4935337408512288
+	imgsz: 640
+	lr0: 0.002652314686574803
+	lrf: 0.12789718942608613
+	momentum: 0.8567943777612007
+	mosaic: 0.987196401708934
+	optimizer: AdamW
+	scale: 0.07724421731830955
+	translate: 0.025696338187788516
+	weight_decay: 0.0002713954530677134
+2026-07-27 17:08:03 INFO About to run command: /usr/bin/env python  --box_gain=6.679360343295507 --cls_gain=0.516110583366607 --copy_paste=0.2802954911288572 --dfl_gain=1.4935337408512288 --imgsz=640 --lr0=0.002652314686574803 --lrf=0.12789718942608613 --momentum=0.8567943777612007 --mosaic=0.987196401708934 --optimizer=AdamW --scale=0.07724421731830955 --translate=0.025696338187788516 --weight_decay=0.0002713954530677134
+2026-07-27 17:08:08 INFO Running runs: ['ab6w1o7b']
+2026-07-27 17:08:08 INFO Cleaning up finished run: ab6w1o7b
+2026-07-27 17:08:08 INFO Reached EOF.
+2026-07-27 17:08:08 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:08:11 INFO Agent received command: run
+2026-07-27 17:08:11 INFO Agent starting run with config:
+	box_gain: 6.0633070854959445
+	cls_gain: 0.6167413403040937
+	copy_paste: 0.25148528693817573
+	dfl_gain: 1.5753345042341
+	imgsz: 640
+	lr0: 0.004501297110935082
+	lrf: 0.18450301634241095
+	momentum: 0.9253718301467784
+	mosaic: 0.8185456082173805
+	optimizer: AdamW
+	scale: 0.46734130379915745
+	translate: 0.007833066792302645
+	weight_decay: 0.0003396320914375786
+2026-07-27 17:08:11 INFO About to run command: /usr/bin/env python  --box_gain=6.0633070854959445 --cls_gain=0.6167413403040937 --copy_paste=0.25148528693817573 --dfl_gain=1.5753345042341 --imgsz=640 --lr0=0.004501297110935082 --lrf=0.18450301634241095 --momentum=0.9253718301467784 --mosaic=0.8185456082173805 --optimizer=AdamW --scale=0.46734130379915745 --translate=0.007833066792302645 --weight_decay=0.0003396320914375786
+2026-07-27 17:08:16 INFO Running runs: ['70xqdtnc']
+2026-07-27 17:08:16 ERROR Detected 3 failed runs in the first 60 seconds, shutting down.
+2026-07-27 17:08:16 INFO To disable this check set WANDB_AGENT_DISABLE_FLAPPING=true
+2026-07-27 17:08:16 INFO Reached EOF.
+2026-07-27 17:08:16 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:12:32 INFO Running runs: []
+2026-07-27 17:12:33 INFO Agent received command: run
+2026-07-27 17:12:33 INFO Agent starting run with config:
+	box_gain: 7.756046327520125
+	cls_gain: 0.39784362106652593
+	copy_paste: 0.018813534211737825
+	dfl_gain: 1.4202045694299723
+	imgsz: 640
+	lr0: 0.0020861978195133592
+	lrf: 0.14671715140285818
+	momentum: 0.9472826986240824
+	mosaic: 0.6754329225148199
+	optimizer: AdamW
+	scale: 0.009480674445028203
+	translate: 0.07773759785554063
+	weight_decay: 0.0006272441531628927
+2026-07-27 17:12:33 INFO About to run command: /usr/bin/env python  --box_gain=7.756046327520125 --cls_gain=0.39784362106652593 --copy_paste=0.018813534211737825 --dfl_gain=1.4202045694299723 --imgsz=640 --lr0=0.0020861978195133592 --lrf=0.14671715140285818 --momentum=0.9472826986240824 --mosaic=0.6754329225148199 --optimizer=AdamW --scale=0.009480674445028203 --translate=0.07773759785554063 --weight_decay=0.0006272441531628927
+2026-07-27 17:12:38 INFO Running runs: ['5tyia6hg']
+2026-07-27 17:12:38 INFO Cleaning up finished run: 5tyia6hg
+2026-07-27 17:12:38 INFO Reached EOF.
+2026-07-27 17:12:38 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:12:42 INFO Agent received command: run
+2026-07-27 17:12:42 INFO Agent starting run with config:
+	box_gain: 7.175844016621576
+	cls_gain: 0.5658621174982981
+	copy_paste: 0.06739314387619368
+	dfl_gain: 1.8130612518519864
+	imgsz: 640
+	lr0: 0.008632799532144173
+	lrf: 0.1851080471843614
+	momentum: 0.9542823744335308
+	mosaic: 0.5927221703302701
+	optimizer: SGD
+	scale: 0.3874097945201768
+	translate: 0.027039863419198108
+	weight_decay: 0.00039352201593080224
+2026-07-27 17:12:42 INFO About to run command: /usr/bin/env python  --box_gain=7.175844016621576 --cls_gain=0.5658621174982981 --copy_paste=0.06739314387619368 --dfl_gain=1.8130612518519864 --imgsz=640 --lr0=0.008632799532144173 --lrf=0.1851080471843614 --momentum=0.9542823744335308 --mosaic=0.5927221703302701 --optimizer=SGD --scale=0.3874097945201768 --translate=0.027039863419198108 --weight_decay=0.00039352201593080224
+2026-07-27 17:12:47 INFO Running runs: ['etg9j0d8']
+2026-07-27 17:12:47 INFO Cleaning up finished run: etg9j0d8
+2026-07-27 17:12:47 INFO Reached EOF.
+2026-07-27 17:12:47 INFO Closing mailbox, abandoning 0 handles.
+2026-07-27 17:12:51 INFO Agent received command: run
+2026-07-27 17:12:51 INFO Agent starting run with config:
+	box_gain: 6.383333171291564
+	cls_gain: 0.45206482302114903
+	copy_paste: 0.032722614281605354
+	dfl_gain: 1.136283472752456
+	imgsz: 640
+	lr0: 0.001080593040912786
+	lrf: 0.05097294484474465
+	momentum: 0.9622283438479868
+	mosaic: 0.6511119846215687
+	optimizer: AdamW
+	scale: 0.31797622742392767
+	translate: 0.1562837064642567
+	weight_decay: 0.00017655060748404796
+2026-07-27 17:12:51 INFO About to run command: /usr/bin/env python  --box_gain=6.383333171291564 --cls_gain=0.45206482302114903 --copy_paste=0.032722614281605354 --dfl_gain=1.136283472752456 --imgsz=640 --lr0=0.001080593040912786 --lrf=0.05097294484474465 --momentum=0.9622283438479868 --mosaic=0.6511119846215687 --optimizer=AdamW --scale=0.31797622742392767 --translate=0.1562837064642567 --weight_decay=0.00017655060748404796
+2026-07-27 17:12:56 INFO Running runs: ['mggofoyy']
+2026-07-27 17:12:56 ERROR Detected 3 failed runs in the first 60 seconds, shutting down.
+2026-07-27 17:12:56 INFO To disable this check set WANDB_AGENT_DISABLE_FLAPPING=true
+2026-07-27 17:12:56 INFO Reached EOF.
+2026-07-27 17:12:56 INFO Closing mailbox, abandoning 0 handles.

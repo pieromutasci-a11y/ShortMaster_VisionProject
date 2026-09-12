@@ -1,0 +1,28 @@
+{
+  "os":  "Linux-7.0.0-28-generic-x86_64-with-glibc2.35",
+  "python":  "CPython 3.10.12",
+  "startedAt":  "2026-07-27T17:16:27.681447Z",
+  "args":  [
+    "--sweep-id",
+    "sqkfh2ka"
+  ],
+  "program":  "/home/user/ros_workspace/wandb/run_sweep.py",
+  "codePath":  "run_sweep.py",
+  "codePathLocal":  "run_sweep.py",
+  "email":  "pieromutasci@gmail.com",
+  "root":  "/home/user/ros_workspace/wandb",
+  "host":  "508932e9664d",
+  "executable":  "/usr/bin/python3",
+  "cpu_count":  4,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "234039422976",
+      "used":  "77315870720"
+    }
+  },
+  "memory":  {
+    "total":  "7511293952"
+  },
+  "writerId":  "qw4yawbbnb9y3qn69exkuah9sgula8c3"
+}

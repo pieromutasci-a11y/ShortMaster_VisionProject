@@ -1,0 +1,12 @@
+# colcon build artifacts (rigenerabili con `colcon build`)
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
+
+# Python
+__pycache__/
+*.pyc
+
+# editor
+*.swp
+*.swo

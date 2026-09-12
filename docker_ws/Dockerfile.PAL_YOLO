@@ -1,0 +1,16 @@
+# Immagine Docker per lo stack TIAGo Pro: base PAL Robotics + dipendenze
+# ROS/Python per detection YOLO, cv_bridge e pose_optimizer.
+FROM palrobotics/public-simulation-humble-public
+
+RUN sudo apt-get update && sudo apt-get install -y \
+    python3-pip \
+    ros-humble-cv-bridge \
+    python3-opencv \
+    ros-humble-teleop-twist-keyboard \
+    python3-pykdl \
+    ros-humble-urdfdom-py \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install ultralytics wandb pyyaml matplotlib
+RUN pip3 install pin scipy
+RUN pip3 install "numpy<2" --force-reinstall

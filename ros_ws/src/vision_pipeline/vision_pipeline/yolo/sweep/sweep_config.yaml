@@ -1,0 +1,77 @@
+# Configurazione dello sweep W&B: ricerca bayesiana degli iperparametri
+# YOLO, ottimizzando mAP50-95 sulle classi rilevanti per il grasping.
+method: bayes
+
+metric:
+  name: map5095_grasp
+  goal: maximize
+
+parameters:
+
+  box_gain:
+    distribution: uniform
+    min: 6.0
+    max: 10.0
+
+  cls_gain:
+    distribution: uniform
+    min: 0.3
+    max: 0.7
+
+  dfl_gain:
+    distribution: uniform
+    min: 1.0
+    max: 2.0
+
+  imgsz:
+    value: 640
+
+  lr0:
+    distribution: log_uniform_values
+    min: 0.001
+    max: 0.01
+
+  lrf:
+    distribution: uniform
+    min: 0.01
+    max: 0.2
+
+  momentum:
+    distribution: uniform
+    min: 0.85
+    max: 0.98
+
+  weight_decay:
+    distribution: log_uniform_values
+    min: 0.0001
+    max: 0.001
+
+  optimizer:
+    values: ["SGD", "AdamW"]
+
+  scale:
+    distribution: uniform
+    min: 0.0
+    max: 0.5
+
+  translate:
+    distribution: uniform
+    min: 0.0
+    max: 0.2
+
+  copy_paste:
+    distribution: uniform
+    min: 0.0
+    max: 0.3
+
+  mosaic:
+    distribution: uniform
+    min: 0.5
+    max: 1.0
+
+run_cap: 20
+
+command:
+  - python3
+  - ${program}
+  - ${args}

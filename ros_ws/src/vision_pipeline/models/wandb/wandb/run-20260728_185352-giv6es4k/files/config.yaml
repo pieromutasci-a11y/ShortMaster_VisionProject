@@ -1,0 +1,69 @@
+_wandb:
+    value:
+        cli_version: 0.28.1
+        e:
+            awtbkgld38gtf4ampprhvcknlpofahix:
+                args:
+                    - --sweep-id
+                    - sqkfh2ka
+                codePath: run_sweep.py
+                codePathLocal: run_sweep.py
+                cpu_count: 4
+                cpu_count_logical: 8
+                disk:
+                    /:
+                        total: "234039422976"
+                        used: "78940647424"
+                email: pieromutasci@gmail.com
+                executable: /usr/bin/python3
+                host: a354e3234838
+                memory:
+                    total: "7511293952"
+                os: Linux-7.0.0-28-generic-x86_64-with-glibc2.35
+                program: /home/user/ros_workspace/wandb/./run_sweep.py
+                python: CPython 3.10.12
+                root: /home/user/ros_workspace/wandb
+                startedAt: "2026-07-28T18:53:52.994202Z"
+                writerId: awtbkgld38gtf4ampprhvcknlpofahix
+        m: []
+        python_version: 3.10.12
+        t:
+            "1":
+                - 1
+                - 41
+            "2":
+                - 1
+                - 41
+            "3":
+                - 2
+                - 14
+            "4": 3.10.12
+            "5": 0.28.1
+            "12": 0.28.1
+            "13": linux-x86_64
+box_gain:
+    value: 9.515814572515415
+cls_gain:
+    value: 0.6699551762768705
+copy_paste:
+    value: 0.14260497936684133
+dfl_gain:
+    value: 1.2032825489879546
+imgsz:
+    value: 640
+lr0:
+    value: 0.0017631608060256457
+lrf:
+    value: 0.1922343794262276
+momentum:
+    value: 0.9619777434105492
+mosaic:
+    value: 0.7619173728476649
+optimizer:
+    value: SGD
+scale:
+    value: 0.4299850450573275
+translate:
+    value: 0.07673821406733712
+weight_decay:
+    value: 0.00036027931720155937

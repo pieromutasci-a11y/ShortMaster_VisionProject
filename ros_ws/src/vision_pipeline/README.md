@@ -1,0 +1,91 @@
+# vision_pipeline
+
+Pacchetto ROS2 (ament_python) che raccoglie tutto quello che serve per la
+pipeline di visione del progetto: raccolta dataset dal robot, teleop di
+supporto, e training/valutazione/inferenza YOLOv8.
+
+## Contenuto
+
+### Simulazione (`launch/`)
+
+`ros2 launch vision_pipeline simulation.launch.py` avvia la simulazione
+Gazebo del TIAGo Pro (mondo, SLAM, navigazione, MoveIt) — e' il punto di
+partenza comune prima di lanciare raccolta dataset, detection o
+pianificazione. Argomenti: `world_name` (default `poliBaMaster`),
+`is_public_sim`, `slam`, `navigation`, `moveit` (default `True` per tutti —
+`moveit` esplicito e non lasciato al default di sistema, perche'
+[`pose_optimizer`](../pose_optimizer) ha bisogno di `move_group` attivo).
+
+```bash
+ros2 launch vision_pipeline simulation.launch.py
+```
+
+### Nodi ROS2 (`vision_pipeline/`)
+
+| Nodo | Eseguibile | Descrizione |
+|---|---|---|
+| `camera_saver_node.py` | `camera_saver` | Salva un frame ogni N dalla camera del robot in `save_dir` (parametro ROS). |
+| `orbit_around_table_node.py` | `orbit_around_table` | Fa percorrere al robot un'orbita omnidirezionale attorno al tavolo, fermandosi periodicamente a muovere la testa (per variare il punto di vista durante la raccolta dataset). |
+| `teleop_node.py` | `teleop` | Teleoperazione da tastiera (base, testa, torso). |
+
+Esempi:
+
+```bash
+ros2 run vision_pipeline teleop
+ros2 run vision_pipeline camera_saver --ros-args -p save_dir:=/home/user/ros_workspace/src/vision_pipeline/data/raw_captures/coke_nordest
+ros2 run vision_pipeline orbit_around_table
+
+# oppure, per lanciare orbita + salvataggio camera insieme:
+ros2 launch vision_pipeline dataset_collection.launch.py save_dir:=/home/user/ros_workspace/src/vision_pipeline/data/raw_captures/coke_nordest
+```
+
+### Script YOLO (`vision_pipeline/yolo/`)
+
+Non sono nodi ROS (non dipendono da rclpy), ma condividono lo stesso workspace
+dati/modelli. Le dipendenze Python (`ultralytics`, `wandb`, `pyyaml`,
+`matplotlib`) sono installate nell'immagine Docker (`docker_ws/Dockerfile.PAL_YOLO`).
+
+| Script | Eseguibile | Descrizione |
+|---|---|---|
+| `train.py` | `yolo_train` | Training YOLOv8 su `data/training_dataset.yolov8`. |
+| `evaluate.py` | `yolo_evaluate` | Valutazione sul test set (metriche globali + per classe + inferenza con box disegnati). Di default valuta **tutti** i modelli in `MODEL_PATHS` (il best dello sweep W&B + i checkpoint in `models/`: Dataset Esteso non ottimizzato, Base, Intermedio, segmentazione) in sequenza, stampando prima dei risultati di ciascuno un'intestazione con path e classi (altrimenti, con piu' modelli in fila, l'output non direbbe a quale si riferisce); la env var `YOLO_MODEL_PATH` sovrascrive `MODEL_PATHS` e ne valuta uno solo. I modelli NON hanno tutti le stesse classi (es. `small_omogeneous_dataset_model` ne conosce solo `coke can`) — il ground truth del test set viene percio' filtrato e rimappato PER MODELLO (`build_filtered_test_dataset`, stesse immagini, label ridotte/rimappate alle sole classi note al modello) prima di valutarlo: altrimenti Ultralytics crasha (confusion matrix dimensionata sulle classi del modello, un oggetto di classe sconosciuta manda l'indice fuori range) ed e' comunque scorretto penalizzare un modello per non aver rilevato una classe che non ha mai imparato. Output in `models_evaluation/models_comparison/<nome_checkpoint>/` (NON dentro `models/`, riservata ai pesi veri — vedi sotto) — una sottocartella per modello (`evaluation/`: confusion matrix, curve P/R/F1/PR, `predictions.json`, `metrics_summary.json` con i valori numerici di P/R/mAP50/mAP50-95 aggregati, per classe e grasping-relevant; `prediction/`: immagini di test con le box disegnate), cosi' i risultati di un modello non sovrascrivono quelli di un altro. Nessun grafico di confronto incrociato generato da questo script — ogni sottocartella contiene solo i dati DI QUEL modello, il confronto tra sottocartelle si fa a occhio (per un confronto grafico vero, vedi `models_comparison_sweep.py`, pero' solo per le run dello sweep W&B). |
+| `predict.py` | `yolo_predict` | Inferenza con un modello YOLOv8 pre-addestrato (COCO) su una cartella di immagini. Output in `models_evaluation/predict/`. |
+| `models_comparison_sweep.py` | `yolo_models_comparison_sweep` | Grafici di confronto tra le run **complete** dello sweep W&B (quelle con una riga in `all_sweeps_summary.csv`, cioe' che hanno finito training e valutazione — le run interrotte a meta' sono escluse ovunque). Nessuna run evidenziata/forzata come "la migliore", stesso stile neutro per tutte, colore coerente per run tra i grafici. Output in `models_evaluation/models_comparison_sweep/`, una sottocartella per ogni cosa plottata: `box_loss/`, `cls_loss/`, `dfl_loss/` (train.png + val.png, da `results.csv`), `precision_recall/`, `map/` (map50.png + map50_95.png), `learning_rate/` — tutti curve per epoca; `confusion_matrix/absolute/` e `confusion_matrix/normalized/` — copiate cosi' come sono da ogni run, non rigenerate; `summary/` — classifica sulla metrica ottimizzata, heatmap mAP per classe, confronto con la metrica generale, accuratezza vs tempo di training (da `all_sweeps_summary.csv`). Riguarda solo le run dello sweep, non i checkpoint aggiunti a mano in `models/` (per quelli vedi `evaluate.py` sopra). |
+| `sweep/` | — | Script per hyperparameter sweep con W&B (`run_sweep.py`, `resume_sweep.py`, `train_sweep.py`, `sweep_config.yaml`). Vanno lanciati direttamente con `python3` dalla cartella `sweep/` (non sono entry point ROS/console perché dipendono da `sweep_config.yaml` nella stessa cartella). |
+
+```bash
+ros2 run vision_pipeline yolo_train
+ros2 run vision_pipeline yolo_evaluate
+ros2 run vision_pipeline yolo_predict
+ros2 run vision_pipeline yolo_models_comparison_sweep
+cd install/vision_pipeline/lib/python3*/site-packages/vision_pipeline/yolo/sweep  # oppure src/vision_pipeline/vision_pipeline/yolo/sweep in sviluppo
+python3 run_sweep.py
+```
+
+## Dati e modelli
+
+Vivono dentro il pacchetto stesso (workspace montato in Docker su
+`/home/user/ros_workspace`), cosi' codice, dati e modelli restano insieme:
+
+```
+ros_ws/src/vision_pipeline/
+├── data/
+│   ├── raw_captures/            # frame grezzi catturati da camera_saver, un sottodir per sessione
+│   └── training_dataset.yolov8/ # dataset annotato (formato YOLOv8, esportato da Roboflow)
+├── models/                      # SOLO pesi veri, niente output derivato/rigenerabile
+│   ├── pretrained/yolov8n.pt    # pesi pre-addestrati di partenza
+│   ├── wandb/                   # output degli sweep W&B (run, pesi per-run, CSV riassuntivo)
+│   └── *.pt                     # checkpoint aggiunti a mano per il confronto tra modelli
+│                                 # (small_omogeneous/eterogeneous_dataset_model_best.pt,
+│                                 # extended_eterogeneous_dataset_model_best.pt = Dataset Esteso
+│                                 # con iperparametri di riferimento, non ottimizzato,
+│                                 # segmentation_model_best.pt)
+└── models_evaluation/           # output di train.py / evaluate.py / predict.py / models_comparison_sweep.py
+    ├── models_comparison/       # un modello per sottocartella (evaluate.py)
+    └── models_comparison_sweep/ # confronto tra le run dello sweep W&B (models_comparison_sweep.py)
+```
+
+Nota: `data/`, `models/` e `models_evaluation/` non sono dichiarati in
+`setup.py` (non vanno installati in `install/`, sono troppo grandi e
+mutano di continuo) — restano nell'albero sorgente e vengono referenziati
+dagli script con path assoluti.
