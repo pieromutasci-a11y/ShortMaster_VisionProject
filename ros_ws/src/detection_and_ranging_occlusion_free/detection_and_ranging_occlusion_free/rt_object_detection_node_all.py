@@ -20,9 +20,11 @@ I topic sono volutamente distinti da quelli del nodo single-object
 
 Rispetto al nodo single-object la stima della depth e' piu' robusta, perche'
 con piu' oggetti in scena il singolo pixel al centro del bbox non basta piu':
-si usa la mediana di una patch centrale mascherata (valid_depth_mask), da cui
-sono esclusi i pixel coperti dal bbox di un oggetto piu' vicino
-(bbox_intersection).
+si usa la mediana di una patch centrale mascherata (valid_depth_mask), che
+resiste a buchi/rumore del sensore. Questo nodo NON ragiona pero' su
+occlusioni reciproche fra gli oggetti tracciati: ogni box viene stimato per
+conto suo, senza escludere i pixel condivisi con un box vicino -- per quello
+vedi detection_and_ranging_occlusion_handler.
 """
 
 # Standard library imports
@@ -110,14 +112,7 @@ def normalize_yolo_class_name(raw_class_name):
 
 
 class BoundingBoxPixels:
-    """
-    Bounding box in coordinate pixel della DEPTH image, con la depth stimata.
-
-    Serve come struttura di appoggio fra le due fasi del processing: prima si
-    stima la depth di ogni detection, poi (ordinando per depth crescente) si
-    ri-stimano quelle piu' lontane escludendo i pixel occlusi da quelle piu'
-    vicine. Ha gli attributi x1/y1/x2/y2 attesi da bbox_intersection().
-    """
+    """Bounding box in coordinate pixel della DEPTH image, con la depth stimata."""
 
     def __init__(self, x1, y1, x2, y2, class_name, confidence):
         self.x1 = x1
@@ -322,7 +317,7 @@ class RtObjectDetectionAllNode(Node):
         scale_x = depth_width / rgb_width
         scale_y = depth_height / rgb_height
 
-        # --- Fase 1: raccogli le detection valide, in pixel depth ---
+        # --- Raccogli le detection valide, in pixel depth ---
         boxes = []
         for bounding_box in detection_results.boxes:
             class_id = int(bounding_box.cls[0])
@@ -345,23 +340,14 @@ class RtObjectDetectionAllNode(Node):
         if not boxes:
             return
 
-        # --- Fase 2: prima stima della depth di ognuno, senza occlusioni ---
-        # Serve solo a sapere chi sta davanti a chi.
+        # --- Stima la depth di ogni box per conto proprio ---
+        # Ogni oggetto e' stimato in isolamento, senza guardare gli altri box
+        # rilevati: questo nodo assume scene senza occlusioni reciproche fra
+        # gli oggetti tracciati.
         for box in boxes:
-            box.depth = self.estimate_box_depth(box, depth_image, occluders=[])
-
-        boxes = [box for box in boxes if box.depth is not None]
-        boxes.sort(key=lambda b: b.depth)
-
-        # --- Fase 3: ri-stima escludendo i pixel degli oggetti piu' vicini ---
-        # Un oggetto davanti a un altro "buca" il bbox di quello dietro: se non
-        # si escludono quei pixel, la depth dell'oggetto occluso viene tirata
-        # verso quella dell'occlusore.
-        for index, box in enumerate(boxes):
-            occluders = boxes[:index]   # gia' ordinati per depth crescente
-            refined_depth = self.estimate_box_depth(box, depth_image, occluders=occluders)
-            if refined_depth is not None:
-                box.depth = refined_depth
+            box.depth = self.estimate_box_depth(box, depth_image)
+            if box.depth is None:
+                continue
 
             position = self.depth_to_3d_point(
                 box, focal_length_x, focal_length_y,
@@ -393,26 +379,17 @@ class RtObjectDetectionAllNode(Node):
         mask &= (depth_region <= MAX_RANGE)
         return mask
 
-    def bbox_intersection(self, box_a, box_b):
-        x1 = max(box_a.x1, box_b.x1)
-        y1 = max(box_a.y1, box_b.y1)
-        x2 = min(box_a.x2, box_b.x2)
-        y2 = min(box_a.y2, box_b.y2)
-        if x1 < x2 and y1 < y2:
-            return (x1, y1, x2, y2)  # si sovrappongono, questo è il rettangolo di sovrapposizione
-        else:
-            return None  # non si sovrappongono
-
-    def estimate_box_depth(self, box, depth_image, occluders):
+    def estimate_box_depth(self, box, depth_image):
         """
         Stima la depth di un oggetto come MEDIANA dei valori validi in una patch
-        centrale del suo bounding box, escludendo i pixel coperti dal bbox di un
-        oggetto piu' vicino (gli 'occluders').
+        centrale del suo bounding box.
 
         La mediana e' molto piu' stabile del singolo pixel centrale usato dal
         nodo single-object: resiste ai buchi della depth (0/NaN sulle superfici
         riflettenti, tipico di una lattina) e a qualche pixel di sfondo che
-        finisce dentro il box.
+        finisce dentro il box. Non tiene conto di eventuali altri oggetti che
+        si sovrappongono al box nell'immagine: questo nodo assume scene senza
+        occlusioni reciproche fra gli oggetti tracciati.
 
         Ritorna None se non resta nessun pixel valido.
         """
@@ -426,25 +403,6 @@ class RtObjectDetectionAllNode(Node):
             return None
 
         mask = self.valid_depth_mask(depth_region)
-
-        # Scarta i pixel che appartengono a un oggetto piu' vicino, che qui
-        # coprirebbe l'oggetto in esame.
-        patch_box = BoundingBoxPixels(px1, py1, px2, py2, box.class_name, box.confidence)
-        for occluder in occluders:
-            # Un box che CONTIENE interamente quello in esame non e' un
-            # occlusore ma un contenitore: e' il caso del tavolo, il cui bbox
-            # racchiude tutti gli oggetti che ci stanno sopra. Trattarlo come
-            # occlusore cancellerebbe l'intera patch e ci lascerebbe senza
-            # nessun pixel valido.
-            if self.contains(occluder, box):
-                continue
-            overlap = self.bbox_intersection(patch_box, occluder)
-            if overlap is None:
-                continue
-            ox1, oy1, ox2, oy2 = overlap
-            # coordinate dell'overlap relative alla patch
-            mask[oy1 - py1:oy2 - py1, ox1 - px1:ox2 - px1] = False
-
         valid_values = depth_region[mask]
         if valid_values.size == 0:
             # Fallback: il singolo pixel al centro del box, come nel nodo
@@ -516,12 +474,6 @@ class RtObjectDetectionAllNode(Node):
         position_msg.point.y = point_y
         position_msg.point.z = point_z
         self.position_pubs[class_name].publish(position_msg)
-
-    @staticmethod
-    def contains(outer, inner):
-        """True se il box 'outer' racchiude interamente 'inner'."""
-        return (outer.x1 <= inner.x1 and outer.y1 <= inner.y1
-                and outer.x2 >= inner.x2 and outer.y2 >= inner.y2)
 
     @staticmethod
     def clamp(value, lower, upper):
